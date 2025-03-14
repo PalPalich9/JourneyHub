@@ -1,35 +1,23 @@
 @echo off
 echo Starting JourneyHub...
 
-mvn --version
-IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Maven is not installed or not in PATH. Please install Maven and try again.
-    pause
-    exit /b 1
-)
-
-docker --version
+:: Проверка установки Docker
+docker --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Docker is not installed or not in PATH. Please install Docker and try again.
     pause
     exit /b 1
 )
 
-echo Building JourneyHub...
-mvn clean package
-IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Failed to build the project. Check Maven logs above.
-    pause
-    exit /b 1
-)
-
-where 7z
+:: Проверка наличия 7-Zip (или другой архиватор)
+where 7z >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo Warning: 7-Zip not found. Please install 7-Zip to unzip the database dump.
     echo Attempting to proceed without unzipping...
 ) ELSE (
+    :: Разархивировать дамп
     echo Unzipping database dump...
-    7z x "db\journeyhub_dump.zip" -o"db" -y
+    7z x "db\journeyhub_dump.zip" -o"db" -y >nul 2>&1
     IF %ERRORLEVEL% NEQ 0 (
         echo Error: Failed to unzip db/journeyhub_dump.zip
         pause
@@ -37,16 +25,14 @@ IF %ERRORLEVEL% NEQ 0 (
     )
 )
 
+:: Запуск Docker Compose
 docker compose up -d
-IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Docker Compose failed. Check Docker logs above.
-    pause
-    exit /b 1
-)
 
+:: Ждём 10 секунд, чтобы контейнеры успели запуститься
 echo Waiting for containers to start...
-timeout /t 10 /nobreak
+timeout /t 10 /nobreak >nul
 
+:: Открываем страницу фронтенда в браузере по умолчанию
 start http://localhost:5173
 
 echo JourneyHub is running!
@@ -56,6 +42,8 @@ echo - Redis: localhost:6379
 echo Press any key to stop...
 pause
 
+:: Остановка сервисов
 docker compose down
 
+:: Удаление разархивированного файла (опционально)
 del "db\journeyhub_dump.sql"
