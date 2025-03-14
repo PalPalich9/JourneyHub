@@ -1,9 +1,24 @@
 @echo off
 echo Starting JourneyHub...
 
+mvn --version >nul 2>&1
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Maven is not installed or not in PATH. Please install Maven and try again.
+    pause
+    exit /b 1
+)
+
 docker --version >nul 2>&1
 IF %ERRORLEVEL% NEQ 0 (
     echo Error: Docker is not installed or not in PATH. Please install Docker and try again.
+    pause
+    exit /b 1
+)
+
+echo Building JourneyHub...
+mvn clean package
+IF %ERRORLEVEL% NEQ 0 (
+    echo Error: Failed to build the project. Check Maven logs.
     pause
     exit /b 1
 )
