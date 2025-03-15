@@ -1,11 +1,26 @@
-# Используем базовый образ с Java 21
-FROM openjdk:21-jdk-slim
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Устанавливаем рабочую директорию
+
 WORKDIR /app
 
-# Копируем уже собранный .jar
-COPY target/JourneyHub-0.0.1-SNAPSHOT.jar app.jar
 
-# Запуск приложения
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+
+COPY src ./src
+
+
+RUN mvn clean package -DskipTests
+
+
+FROM openjdk:21-jdk-slim
+
+
+WORKDIR /app
+
+
+COPY --from=build /app/target/JourneyHub-0.0.1-SNAPSHOT.jar app.jar
+
+
 ENTRYPOINT ["java", "-jar", "app.jar"]

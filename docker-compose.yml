@@ -27,6 +27,11 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5173 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   redis:
@@ -43,7 +48,9 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:17
+    build:
+      context: ./db
+      dockerfile: Dockerfile.db
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=legopass
@@ -52,12 +59,11 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-      - ./db/journeyhub_dump.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d journeyhub && psql -U postgres -d journeyhub -c \"SELECT 1 FROM pg_constraint WHERE conname = 'user_passengers_user_id_fkey';\""]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 30
     restart: unless-stopped
 
 volumes:

@@ -1,49 +1,42 @@
 @echo off
-echo Starting JourneyHub...
+ECHO Starting JourneyHub...
 
-:: Проверка установки Docker
-docker --version >nul 2>&1
+ECHO Checking Docker...
+call docker --version
 IF %ERRORLEVEL% NEQ 0 (
-    echo Error: Docker is not installed or not in PATH. Please install Docker and try again.
-    pause
-    exit /b 1
+    ECHO Error: Docker is not installed or not in PATH. Please install Docker and try again.
+    PAUSE
+    EXIT /B 1
 )
+ECHO Docker check passed.
 
-:: Проверка наличия 7-Zip (или другой архиватор)
-where 7z >nul 2>&1
+ECHO Starting Docker Compose...
+docker compose down  2>nul
+docker compose up -d --build
 IF %ERRORLEVEL% NEQ 0 (
-    echo Warning: 7-Zip not found. Please install 7-Zip to unzip the database dump.
-    echo Attempting to proceed without unzipping...
-) ELSE (
-    :: Разархивировать дамп
-    echo Unzipping database dump...
-    7z x "db\journeyhub_dump.zip" -o"db" -y >nul 2>&1
-    IF %ERRORLEVEL% NEQ 0 (
-        echo Error: Failed to unzip db/journeyhub_dump.zip
-        pause
-        exit /b 1
-    )
+    ECHO Error: Docker Compose failed. Check logs above.
+    PAUSE
+    EXIT /B 1
 )
+ECHO Docker Compose started.
 
-:: Запуск Docker Compose
-docker compose up -d
+ECHO Waiting for containers to start...
+echo.
+echo.
 
-:: Ждём 10 секунд, чтобы контейнеры успели запуститься
-echo Waiting for containers to start...
-timeout /t 10 /nobreak >nul
+echo !!! On the first launch, please wait 2 minutes for the dump to load !!!
 
-:: Открываем страницу фронтенда в браузере по умолчанию
+echo.
+echo.
+timeout /t 5 /nobreak
+
 start http://localhost:5173
 
-echo JourneyHub is running!
-echo - Backend: http://localhost:8080
-echo - Frontend: http://localhost:5173
-echo - Redis: localhost:6379
-echo Press any key to stop...
-pause
+ECHO JourneyHub is running!
+ECHO - Backend: http://localhost:8080
+ECHO - Frontend: http://localhost:5173
+ECHO - Redis: localhost:6379
+ECHO Press any key to stop...
+PAUSE
 
-:: Остановка сервисов
 docker compose down
-
-:: Удаление разархивированного файла (опционально)
-del "db\journeyhub_dump.sql"
