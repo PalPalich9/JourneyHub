@@ -25,23 +25,22 @@ public class TicketEventListener {
     @EventListener
     @Transactional
     public void handleTicketChange(TicketChangeEvent event) {
-        Ticket ticket = event.getTicket();
-        Long routeId = ticket.getRoute().getId();
-
-        boolean hasAvailableTickets = ticketRepository.existsAvailableByRouteId(routeId);
-        Route route = routeRepository.findById(routeId)
+        Route route = routeRepository.findById(event.getTicket().getRoute().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Маршрут не найден"));
-        route.setHasAvailableTickets(hasAvailableTickets);
-        routeRepository.save(route);
+        boolean newHasAvailableTickets = ticketRepository.existsAvailableByRouteId(route.getId());
 
-        String routeIndexKey = "route:" + routeId;
-        Set<Object> cacheKeysRaw = redisTemplate.opsForSet().members(routeIndexKey);
-        if (cacheKeysRaw != null && !cacheKeysRaw.isEmpty()) {
-            Set<String> cacheKeys = cacheKeysRaw.stream()
+        if (route.isHasAvailableTickets() != newHasAvailableTickets) {
+            route.setHasAvailableTickets(newHasAvailableTickets);
+            routeRepository.save(route);
+
+            String routeIndexKey = "route:" + route.getId();
+            Set<String> cacheKeys = redisTemplate.opsForSet().members(routeIndexKey).stream()
                     .map(obj -> obj.toString().replaceAll("^\"|\"$", ""))
                     .collect(Collectors.toSet());
-            redisTemplate.delete(cacheKeys);
-            redisTemplate.delete(routeIndexKey);
+            if (!cacheKeys.isEmpty()) {
+                redisTemplate.delete(cacheKeys);
+                redisTemplate.delete(routeIndexKey);
+            }
         }
     }
 }
