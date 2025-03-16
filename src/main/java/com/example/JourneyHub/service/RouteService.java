@@ -100,15 +100,7 @@ public class RouteService {
                                         else comparison = 0;
                                         break;
                                 case DEFAULT:
-                                        Route firstRouteP1 = p1.getPath().stream()
-                                                .filter(route -> route.getDepartureCity().equals(departureCity))
-                                                .findFirst()
-                                                .orElse(p1.getPath().get(0));
-                                        Route firstRouteP2 = p2.getPath().stream()
-                                                .filter(route -> route.getDepartureCity().equals(departureCity))
-                                                .findFirst()
-                                                .orElse(p2.getPath().get(0));
-                                        comparison = firstRouteP1.getDepartureTime().compareTo(firstRouteP2.getDepartureTime());
+                                        comparison = p1.getPath().get(0).getDepartureTime().compareTo(p2.getPath().get(0).getDepartureTime());
                                         break;
                                 default:
                                         comparison = 0;
