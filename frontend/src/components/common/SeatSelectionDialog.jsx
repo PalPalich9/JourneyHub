@@ -156,17 +156,23 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
     const segmentSeats = segmentData ? segmentData.tickets : [];
     const transportType = (segmentData?.ticketId.transportType || segment.transportType || '').toUpperCase();
 
-    const sortedSeats = [...segmentSeats].sort((a, b) => a.seatNumber - b.seatNumber);
-    const luxurySeats = sortedSeats.filter(s => s.ticketType === 'luxury');
-    const economySeats = sortedSeats.filter(s => s.ticketType === 'economy');
+    let seatsPerColumn = 4;
 
-    const seatsPerColumn = 2;
-    const luxuryColumns = Array(Math.ceil(luxurySeats.length / seatsPerColumn)).fill().map((_, i) =>
-      luxurySeats.slice(i * seatsPerColumn, (i + 1) * seatsPerColumn)
-    );
-    const economyColumns = Array(Math.ceil(economySeats.length / seatsPerColumn)).fill().map((_, i) =>
-      economySeats.slice(i * seatsPerColumn, (i + 1) * seatsPerColumn)
-    );
+    const allSeats = [...segmentSeats].sort((a, b) => a.seatNumber - b.seatNumber);
+    const luxurySeats = allSeats.filter(s => s.ticketType === 'luxury');
+    const economySeats = allSeats.filter(s => s.ticketType === 'economy');
+
+    const groupIntoColumns = (seats, totalColumns) => {
+      const columns = Array.from({ length: totalColumns }, () => []);
+      seats.forEach((seat, index) => {
+        const columnIndex = index % totalColumns;
+        columns[columnIndex].push(seat);
+      });
+      return columns;
+    };
+
+    const luxuryColumns = groupIntoColumns(luxurySeats, seatsPerColumn);
+    const economyColumns = groupIntoColumns(economySeats, seatsPerColumn);
 
     const luxuryPrice = luxurySeats.length > 0 ? luxurySeats[0].price : 0;
     const economyPrice = economySeats.length > 0 ? economySeats[0].price : 0;
@@ -346,7 +352,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                maxHeight: '70vh',
+                maxHeight supremacy: '70vh',
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': {
                   width: '8px',
