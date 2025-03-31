@@ -156,25 +156,21 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
     const segmentSeats = segmentData ? segmentData.tickets : [];
     const transportType = (segmentData?.ticketId.transportType || segment.transportType || '').toUpperCase();
 
-    let seatsPerColumn = 4;
-    let luxurySeats = segmentSeats.filter(s => s.ticketType === 'luxury');
-    let economySeats = segmentSeats.filter(s => s.ticketType === 'economy');
+    const sortedSeats = [...segmentSeats].sort((a, b) => a.seatNumber - b.seatNumber);
 
-    const groupIntoColumns = (seats, totalColumns) => {
-      const columns = Array.from({ length: totalColumns }, () => []);
-      seats.forEach((seat, index) => {
-        const columnIndex = index % totalColumns;
-        columns[columnIndex].push(seat);
-      });
-      return columns;
-    };
+    const luxurySeats = sortedSeats.filter(s => s.ticketType === 'luxury');
+    const economySeats = sortedSeats.filter(s => s.ticketType === 'economy');
 
-    const luxuryColumns = groupIntoColumns(luxurySeats, seatsPerColumn);
-    const economyColumns = groupIntoColumns(economySeats, seatsPerColumn);
+    const seatsPerRow = 4;
+    const luxuryRows = Array.from({ length: Math.ceil(luxurySeats.length / seatsPerRow) }, (_, i) =>
+      luxurySeats.slice(i * seatsPerRow, (i + 1) * seatsPerRow)
+    );
+    const economyRows = Array.from({ length: Math.ceil(economySeats.length / seatsPerRow) }, (_, i) =>
+      economySeats.slice(i * seatsPerRow, (i + 1) * seatsPerRow)
+    );
 
     const luxuryPrice = luxurySeats.length > 0 ? luxurySeats[0].price : 0;
     const economyPrice = economySeats.length > 0 ? economySeats[0].price : 0;
-
 
     const getTransportIcon = (type) => {
       switch (type) {
@@ -231,18 +227,13 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#D4A017', mb: 2, textAlign: 'center' }}>
               Люкс места
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-              {luxuryColumns.map((column, colIndex) => (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {luxuryRows.map((row, rowIndex) => (
                 <Box
-                  key={`luxury-col-${colIndex}`}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    mr: colIndex === 1 ? 6 : 1,
-                  }}
+                  key={`luxury-row-${rowIndex}`}
+                  sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}
                 >
-                  {column.map(ticket => renderSeat(ticket, segment.id))}
+                  {row.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
               ))}
             </Box>
@@ -254,18 +245,13 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', mb: 2, textAlign: 'center' }}>
               Эконом места
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
-              {economyColumns.map((column, colIndex) => (
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {economyRows.map((row, rowIndex) => (
                 <Box
-                  key={`economy-col-${colIndex}`}
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    mr: colIndex === 1 ? 6 : 1,
-                  }}
+                  key={`economy-row-${rowIndex}`}
+                  sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}
                 >
-                  {column.map(ticket => renderSeat(ticket, segment.id))}
+                  {row.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
               ))}
             </Box>
