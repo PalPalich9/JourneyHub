@@ -231,7 +231,11 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
               {luxuryRows.map((row, rowIndex) => (
                 <Box
                   key={`luxury-row-${rowIndex}`}
-                  sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mb: rowIndex === 1 ? 3 : 1,
+                  }}
                 >
                   {row.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
@@ -249,7 +253,11 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
               {economyRows.map((row, rowIndex) => (
                 <Box
                   key={`economy-row-${rowIndex}`}
-                  sx={{ display: 'flex', justifyContent: 'center', mb: 1 }}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    mb: rowIndex === 1 ? 3 : 1,
+                  }}
                 >
                   {row.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
