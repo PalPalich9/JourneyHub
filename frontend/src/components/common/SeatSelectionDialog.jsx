@@ -157,16 +157,15 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
     const transportType = (segmentData?.ticketId.transportType || segment.transportType || '').toUpperCase();
 
     const sortedSeats = [...segmentSeats].sort((a, b) => a.seatNumber - b.seatNumber);
-
     const luxurySeats = sortedSeats.filter(s => s.ticketType === 'luxury');
     const economySeats = sortedSeats.filter(s => s.ticketType === 'economy');
 
-    const seatsPerRow = 4;
-    const luxuryRows = Array.from({ length: Math.ceil(luxurySeats.length / seatsPerRow) }, (_, i) =>
-      luxurySeats.slice(i * seatsPerRow, (i + 1) * seatsPerRow)
+    const seatsPerColumn = 2;
+    const luxuryColumns = Array(Math.ceil(luxurySeats.length / seatsPerColumn)).fill().map((_, i) =>
+      luxurySeats.slice(i * seatsPerColumn, (i + 1) * seatsPerColumn)
     );
-    const economyRows = Array.from({ length: Math.ceil(economySeats.length / seatsPerRow) }, (_, i) =>
-      economySeats.slice(i * seatsPerRow, (i + 1) * seatsPerRow)
+    const economyColumns = Array(Math.ceil(economySeats.length / seatsPerColumn)).fill().map((_, i) =>
+      economySeats.slice(i * seatsPerColumn, (i + 1) * seatsPerColumn)
     );
 
     const luxuryPrice = luxurySeats.length > 0 ? luxurySeats[0].price : 0;
@@ -227,17 +226,18 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#D4A017', mb: 2, textAlign: 'center' }}>
               Люкс места
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {luxuryRows.map((row, rowIndex) => (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+              {luxuryColumns.map((column, colIndex) => (
                 <Box
-                  key={`luxury-row-${rowIndex}`}
+                  key={`luxury-col-${colIndex}`}
                   sx={{
                     display: 'flex',
-                    justifyContent: 'center',
-                    mr: rowIndex === 1 ? 6 : 1,
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    mr: colIndex === 1 ? 6 : 1,
                   }}
                 >
-                  {row.map(ticket => renderSeat(ticket, segment.id))}
+                  {column.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
               ))}
             </Box>
@@ -249,17 +249,18 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
             <Typography variant="h6" sx={{ fontWeight: 600, color: '#1976d2', mb: 2, textAlign: 'center' }}>
               Эконом места
             </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              {economyRows.map((row, rowIndex) => (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-start' }}>
+              {economyColumns.map((column, colIndex) => (
                 <Box
-                  key={`economy-row-${rowIndex}`}
+                  key={`economy-col-${colIndex}`}
                   sx={{
                     display: 'flex',
-                    justifyContent: 'center',
-                    mr: rowIndex === 1 ? 6 : 1,
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    mr: colIndex === 1 ? 6 : 1,
                   }}
                 >
-                  {row.map(ticket => renderSeat(ticket, segment.id))}
+                  {column.map(ticket => renderSeat(ticket, segment.id))}
                 </Box>
               ))}
             </Box>
