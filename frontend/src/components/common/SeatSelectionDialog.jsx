@@ -234,7 +234,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                   sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    mb: rowIndex === 1 ? 3 : 1,
+                    mr: rowIndex === 1 ? 6 : 1,
                   }}
                 >
                   {row.map(ticket => renderSeat(ticket, segment.id))}
@@ -256,7 +256,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                   sx={{
                     display: 'flex',
                     justifyContent: 'center',
-                    mb: rowIndex === 1 ? 3 : 1,
+                    mr: rowIndex === 1 ? 6 : 1,
                   }}
                 >
                   {row.map(ticket => renderSeat(ticket, segment.id))}
