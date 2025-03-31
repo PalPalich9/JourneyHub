@@ -352,7 +352,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                maxHeight supremacy: '70vh',
+                maxHeight: '70vh',
                 overflowY: 'auto',
                 '&::-webkit-scrollbar': {
                   width: '8px',
