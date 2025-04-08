@@ -7,25 +7,23 @@ import lombok.Getter;
 
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @AllArgsConstructor
 public class TicketWithRouteDto {
-    // Билет
     private Integer seatNumber;
     private Integer price;
-    private TicketClass ticketClass;
+    private TicketClass ticketType;
     private Long userId;
     private Long passengerId;
-
-    // Маршрут
-    private Long routeId;
+    private Long trip;
     private String departureCity;
     private String arrivalCity;
     private LocalDateTime departureTime;
     private LocalDateTime arrivalTime;
-
     private String travelDuration;
-
     private String transportType;
+    private Long routeId;
+    private List<Long> routeIds;
 }

@@ -9,7 +9,7 @@ import java.util.Objects;
 @Getter
 @AllArgsConstructor
 public class TicketIdTypeDto {
-    private  Long routeId;
+    private Long trip;
     private  String transportType;
 
 
@@ -18,11 +18,11 @@ public class TicketIdTypeDto {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         TicketIdTypeDto that = (TicketIdTypeDto) o;
-        return routeId.equals(that.routeId) && transportType.equals(that.transportType);
+        return trip.equals(that.trip) && transportType.equals(that.transportType);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(routeId, transportType);
+        return Objects.hash(trip, transportType);
     }
 }

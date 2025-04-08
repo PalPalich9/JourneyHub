@@ -22,12 +22,12 @@ public class RouteController {
 
 
     @GetMapping("/direct-by-date")
-    public ResponseEntity<Map<LocalDate, List<RouteDto>>> getDirectRoutesGroupedByDate(
+    public Map<LocalDate, List<RouteDto>> getDirectRoutesGroupedByDate(
             @RequestParam String departureCity,
             @RequestParam String arrivalCity,
             @RequestParam(required = false) String transportType,
             @RequestParam(defaultValue = "DEFAULT") SortCriteria sort) {
-        return ResponseEntity.ok(routeService.getDirectRoutesGroupedByDate(departureCity, arrivalCity, transportType, sort));
+        return routeService.getDirectRoutesGroupedByDate(departureCity, arrivalCity, transportType, sort);
     }
 
     @GetMapping("/search")

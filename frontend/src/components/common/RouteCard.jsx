@@ -26,7 +26,6 @@ const RouteCard = ({ route }) => {
   const [openDialog, setOpenDialog] = useState(false);
   const [seatsData, setSeatsData] = useState([]);
 
-
   if (!route) {
     return null;
   }
@@ -58,30 +57,31 @@ const RouteCard = ({ route }) => {
   const fetchSeats = async () => {
     try {
       const token = localStorage.getItem('token');
-      const ids = segments.map(segment => segment?.id).filter(Boolean);
-      const routeIds = ids.join(',');
-      if (!routeIds) {
+      const routeIdsGroups = segments.map(segment => segment.routeIds || [segment.id]).filter(Boolean);
+      if (routeIdsGroups.length === 0) {
+        console.error('No route IDs to fetch seats for');
         return;
       }
-      const url = `/routes/seats?routeIds=${routeIds}`;
+      const routeIdsParams = routeIdsGroups.map(group => group.join(',')).join('&routeIds=');
+      const url = `/routes/seats?routeIds=${routeIdsParams}`;
+      console.log('Fetching seats with URL:', url);
       const response = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('Seats API response:', response.data);
+
       const transformedData = response.data.map((item, index) => {
         const segment = segments[index] || {};
         return {
           ticketId: {
-            routeId: item?.ticketId?.routeId || segment.id,
-            transportType: item?.ticketId?.transportType || segment.transportType,
+            trip: item.ticketId.trip,
+            transportType: item.ticketId.transportType || segment.transportType,
           },
-          tickets: (item?.tickets || []).map(t => ({
-            seatNumber: t?.seatNumber,
-            ticketType: t?.ticketType,
-            price: t?.price,
-            available: t?.available,
-          })),
+          seats: item.seats || [],
+          routeIds: item.routeIds || segment.routeIds || [segment.id], // Добавляем routeIds
         };
       });
+      console.log('Transformed seats data:', transformedData);
       setSeatsData(transformedData);
     } catch (err) {
       console.error('Error fetching seats:', err.response ? err.response.data : err.message);
@@ -123,9 +123,9 @@ const RouteCard = ({ route }) => {
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <TransportIcon transportType={segment?.transportType} sx={{ fontSize: '40px', color: '#1976d2' }} />
                     <Box sx={{ ml: 3 }}>
-                      {segment?.id && isTransferRoute && (
+                      {segment?.trip && isTransferRoute && (
                         <Typography variant="caption" sx={{ color: 'gray', mb: 1, display: 'block', fontSize: '16px' }}>
-                          Рейс {segment.id}
+                          Рейс {segment.trip}
                         </Typography>
                       )}
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -208,9 +208,9 @@ const RouteCard = ({ route }) => {
               ))}
             </Box>
             <Box sx={{ flexGrow: 1 }}>
-              {!isTransferRoute && firstSegment?.id && (
+              {!isTransferRoute && firstSegment?.trip && (
                 <Typography variant="caption" sx={{ color: 'gray', mb: 1, display: 'block', fontSize: '16px' }}>
-                  Рейс {firstSegment.id}
+                  Рейс {firstSegment.trip}
                 </Typography>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
@@ -279,6 +279,8 @@ const RouteCard = ({ route }) => {
           route={route}
           segments={segments}
           seatsData={seatsData}
+          departureCity={departureCity}
+          arrivalCity={arrivalCity}
         />
       </Box>
     </Fade>

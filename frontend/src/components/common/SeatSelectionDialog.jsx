@@ -5,7 +5,7 @@ import api from '../../api/api';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
-const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
+const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData, departureCity, arrivalCity }) => {
   const [selectedSeats, setSelectedSeats] = useState({});
   const [selectedPassenger, setSelectedPassenger] = useState('');
   const [passengers, setPassengers] = useState([]);
@@ -52,21 +52,21 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
     fetchPassengers();
   }, [userId, isAuthenticated]);
 
-  const handleSeatSelect = (routeId, seatNumber) => {
-    const segmentData = seatsData.find(data => data.ticketId.routeId === routeId);
-    const seat = segmentData?.tickets.find(s => s.seatNumber === seatNumber);
-    if (seat?.available) {
+  const handleSeatSelect = (trip, seatNumber) => {
+    const segmentData = seatsData.find(data => data.ticketId.trip === trip);
+    const seat = segmentData?.seats.find(s => s.seatNumber === seatNumber);
+    if (seat?.isAvailable) {
       setSelectedSeats(prev => ({
         ...prev,
-        [routeId]: prev[routeId] === seatNumber ? null : seatNumber,
+        [trip]: prev[trip] === seatNumber ? null : seatNumber,
       }));
     }
   };
 
-  const getSeatColor = (ticket, routeId) => {
-    if (!ticket.available) return 'grey';
-    if (selectedSeats[routeId] === ticket.seatNumber) return '#4CAF50';
-    if (ticket.ticketType === 'luxury') return '#D4A017';
+  const getSeatColor = (seat, trip) => {
+    if (!seat.isAvailable) return 'grey';
+    if (selectedSeats[trip] === seat.seatNumber) return '#4CAF50';
+    if (seat.ticketType === 'luxury') return '#D4A017';
     return '#1976d2';
   };
 
@@ -83,11 +83,19 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
         return;
       }
 
-      const bookingRequests = selectedSeatEntries.map(([routeId, seatNumber]) => ({
-        routeId: parseInt(routeId),
-        seatNumber,
-        passengerId: parseInt(selectedPassenger),
-      }));
+      const bookingRequests = selectedSeatEntries.map(([trip, seatNumber]) => {
+        const segmentData = seatsData.find(data => data.ticketId.trip === parseInt(trip));
+        console.log('Segment data for trip', trip, ':', segmentData);
+        if (!segmentData || !segmentData.routeIds) {
+          throw new Error(`No routeIds found for trip ${trip}`);
+        }
+        return {
+          routeIds: segmentData.routeIds,
+          seatNumber,
+          passengerId: parseInt(selectedPassenger),
+        };
+      });
+      console.log('Booking requests:', bookingRequests);
 
       const token = localStorage.getItem('token');
       if (!token) {
@@ -95,9 +103,11 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
         return;
       }
 
+      console.log('Sending booking request to API...');
       const response = await api.post('/tickets/book-multiple', bookingRequests, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('Booking response:', response.data);
 
       if (response.status === 200) {
         alert('Билеты успешно забронированы!');
@@ -107,17 +117,18 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
         navigate('/user', { state: { tab: 2 } });
       }
     } catch (err) {
+      console.error('Booking error:', err.response ? err.response.data : err.message);
       if (err.response && err.response.status === 409) {
-        setError('Ой, похоже этот билет уже купили');
+        setError('Ой, похоже, этот билет уже купили');
       } else {
-        setError('Ошибка бронирования: ' + (err.message || 'Неизвестная ошибка'));
+        setError('Ошибка бронирования: ' + (err.response?.data || err.message));
       }
     }
   };
 
-  const renderSeat = (ticket, routeId) => (
+  const renderSeat = (seat, trip) => (
     <Box
-      key={`${routeId}-seat-${ticket.seatNumber}`}
+      key={`${trip}-seat-${seat.seatNumber}`}
       sx={{
         textAlign: 'center',
         mx: 0.5,
@@ -128,32 +139,32 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
         sx={{
           width: 40,
           height: 40,
-          backgroundColor: getSeatColor(ticket, routeId),
+          backgroundColor: getSeatColor(seat, trip),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: ticket.available ? 'pointer' : 'not-allowed',
+          cursor: seat.isAvailable ? 'pointer' : 'not-allowed',
           border: '2px solid rgba(255, 255, 255, 0.3)',
           borderRadius: 8,
           transition: 'all 0.3s ease',
           '&:hover': {
-            opacity: ticket.available ? 0.8 : 1,
-            transform: ticket.available ? 'scale(1.1)' : 'none',
-            boxShadow: ticket.available ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
+            opacity: seat.isAvailable ? 0.8 : 1,
+            transform: seat.isAvailable ? 'scale(1.1)' : 'none',
+            boxShadow: seat.isAvailable ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
           },
         }}
-        onClick={() => handleSeatSelect(routeId, ticket.seatNumber)}
+        onClick={() => handleSeatSelect(trip, seat.seatNumber)}
       >
         <Typography variant="body2" sx={{ color: 'white', fontWeight: 'bold' }}>
-          {ticket.seatNumber}
+          {seat.seatNumber}
         </Typography>
       </Box>
     </Box>
   );
 
   const renderSeatLayout = (segment) => {
-    const segmentData = seatsData.find(data => data.ticketId.routeId === segment.id);
-    const segmentSeats = segmentData ? segmentData.tickets : [];
+    const segmentData = seatsData.find(data => data.ticketId.trip === segment.trip);
+    const segmentSeats = segmentData ? segmentData.seats : [];
     const transportType = (segmentData?.ticketId.transportType || segment.transportType || '').toUpperCase();
 
     let seatsPerColumn = 4;
@@ -205,9 +216,9 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
         }}
         key={segment.id}
       >
-        {segment.id && (
+        {segment.trip && (
           <Typography variant="caption" sx={{ color: '#757575', mb: 1, display: 'block', textAlign: 'center' }}>
-            Рейс {segment.id}
+            Рейс {segment.trip}
           </Typography>
         )}
         <Typography
@@ -243,7 +254,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                     mr: colIndex === 1 ? 6 : 1,
                   }}
                 >
-                  {column.map(ticket => renderSeat(ticket, segment.id))}
+                  {column.map(seat => renderSeat(seat, segment.trip))}
                 </Box>
               ))}
             </Box>
@@ -266,7 +277,7 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                     mr: colIndex === 1 ? 6 : 1,
                   }}
                 >
-                  {column.map(ticket => renderSeat(ticket, segment.id))}
+                  {column.map(seat => renderSeat(seat, segment.trip))}
                 </Box>
               ))}
             </Box>
@@ -299,10 +310,10 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
     );
   };
 
-  const totalPrice = Object.entries(selectedSeats).reduce((sum, [routeId, seatNumber]) => {
+  const totalPrice = Object.entries(selectedSeats).reduce((sum, [trip, seatNumber]) => {
     if (!seatNumber) return sum;
-    const segmentData = seatsData.find(data => data.ticketId.routeId === parseInt(routeId));
-    const seat = segmentData?.tickets.find(s => s.seatNumber === seatNumber);
+    const segmentData = seatsData.find(data => data.ticketId.trip === parseInt(trip));
+    const seat = segmentData?.seats.find(s => s.seatNumber === seatNumber);
     return sum + (seat?.price || 0);
   }, 0);
 
@@ -494,14 +505,14 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
               </Button>
               <Divider sx={{ my: 3, borderColor: '#e0e0e0' }} />
               <Box sx={{ mt: 3 }}>
-                {Object.entries(selectedSeats).map(([routeId, seatNumber]) => {
+                {Object.entries(selectedSeats).map(([trip, seatNumber]) => {
                   if (!seatNumber) return null;
-                  const segmentData = seatsData.find(data => data.ticketId.routeId === parseInt(routeId));
-                  const seat = segmentData?.tickets.find(s => s.seatNumber === seatNumber);
-                  const segment = segments.find(s => s.id === parseInt(routeId));
+                  const segmentData = seatsData.find(data => data.ticketId.trip === parseInt(trip));
+                  const seat = segmentData?.seats.find(s => s.seatNumber === seatNumber);
+                  const segment = segments.find(s => s.trip === parseInt(trip)) || firstSegment;
                   return (
                     <Box
-                      key={routeId}
+                      key={trip}
                       sx={{
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -515,9 +526,9 @@ const SeatSelectionDialog = ({ open, onClose, route, segments, seatsData }) => {
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {segment?.id && (
+                        {segment?.trip && (
                           <Typography variant="caption" sx={{ color: '#757575' }}>
-                            Рейс {segment.id}
+                            Рейс {segment.trip}
                           </Typography>
                         )}
                         <Typography variant="body2" sx={{ fontWeight: 500, color: '#333' }}>

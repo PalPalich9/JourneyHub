@@ -10,8 +10,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -21,10 +23,16 @@ public class TicketController {
     private final TicketService ticketService;
 
     @GetMapping("/routes/seats")
-    public ResponseEntity<List<Map<String, Object>>> getTicketsGroupedByRoute(@RequestParam List<Long> routeIds) {
+    public ResponseEntity<List<Map<String, Object>>> getTicketsGroupedByRoute(
+            @RequestParam("routeIds") List<String> routeIdsParam) {
+        List<List<Long>> routeIds = routeIdsParam.stream()
+                .map(group -> Arrays.stream(group.split(","))
+                        .map(String::trim)
+                        .map(Long::parseLong)
+                        .collect(Collectors.toList()))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(ticketService.getTicketsGroupedByRoute(routeIds));
     }
-
 
     @PostMapping("/tickets/book-multiple")
     @Transactional
@@ -44,18 +52,27 @@ public class TicketController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(409).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Внутренняя ошибка сервера");
+            return ResponseEntity.internalServerError().body("Внутренняя ошибка сервера: " + e.getMessage());
         }
     }
 
-    @PostMapping("/routes/{routeId}/seats/{seatNumber}/cancel")
-    public ResponseEntity<Void> cancelTicket(@PathVariable Long routeId, @PathVariable Integer seatNumber) {
+    @PostMapping("/tickets/cancel")
+    @Transactional
+    public ResponseEntity<?> cancelTickets(@RequestBody MultipleTicketBookingRequest cancelRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-        if (!ticketService.canCancelTicket(email, routeId, seatNumber)) {
-            return ResponseEntity.notFound().build();
+
+        try {
+            ticketService.cancelTicketsForRouteOrTrip(email, cancelRequest);
+            return ResponseEntity.ok().body("Билеты успешно отменены");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        } catch (SecurityException e) {
+            return ResponseEntity.status(403).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Внутренняя ошибка сервера: " + e.getMessage());
         }
-        ticketService.cancelTicket(routeId, seatNumber);
-        return ResponseEntity.ok().build();
     }
 }

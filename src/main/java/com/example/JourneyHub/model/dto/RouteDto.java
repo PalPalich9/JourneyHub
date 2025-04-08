@@ -8,11 +8,12 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor
 public class RouteDto implements Serializable {
     private Long id;
     private String departureCity;
@@ -23,5 +24,9 @@ public class RouteDto implements Serializable {
     private String transportType;
     private boolean hasAvailableTickets;
     private Integer minPrice;
-
+    private Long trip;
+    private List<Long> routeIds;
+    public RouteDto() {
+        this.routeIds = new ArrayList<>();
+    }
 }

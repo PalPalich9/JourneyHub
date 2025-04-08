@@ -8,12 +8,13 @@ import com.example.JourneyHub.model.entity.Ticket;
 import com.example.JourneyHub.model.entity.User;
 import com.example.JourneyHub.model.enums.TicketClass;
 import java.time.LocalDateTime;
+import java.util.List;
 import javax.annotation.processing.Generated;
 import org.springframework.stereotype.Component;
 
 @Generated(
     value = "org.mapstruct.ap.MappingProcessor",
-    date = "2025-03-14T11:55:40+0300",
+    date = "2025-04-07T00:57:36+0300",
     comments = "version: 1.5.5.Final, compiler: javac, environment: Java 22.0.1 (Oracle Corporation)"
 )
 @Component
@@ -43,7 +44,7 @@ public class TicketMapperImpl implements TicketMapper {
 
         boolean isAvailable = ticket.getPassenger() == null;
 
-        TicketDto ticketDto = new TicketDto( routeId, seatNumber, isAvailable, ticketType, price, departureCity, arrivalCity, transportType );
+        TicketDto ticketDto = new TicketDto( routeId, seatNumber, ticketType, price, departureCity, arrivalCity, transportType, isAvailable );
 
         return ticketDto;
     }
@@ -55,7 +56,7 @@ public class TicketMapperImpl implements TicketMapper {
         }
 
         Integer seatNumber = null;
-        TicketClass ticketClass = null;
+        TicketClass ticketType = null;
         Long userId = null;
         Long passengerId = null;
         Long routeId = null;
@@ -64,10 +65,11 @@ public class TicketMapperImpl implements TicketMapper {
         LocalDateTime departureTime = null;
         LocalDateTime arrivalTime = null;
         String transportType = null;
+        Long trip = null;
         Integer price = null;
 
         seatNumber = ticket.getSeatNumber();
-        ticketClass = ticket.getTicketType();
+        ticketType = ticket.getTicketType();
         userId = ticketUserId( ticket );
         passengerId = ticketPassengerId( ticket );
         routeId = ticketRouteId( ticket );
@@ -76,11 +78,13 @@ public class TicketMapperImpl implements TicketMapper {
         departureTime = ticketRouteDepartureTime( ticket );
         arrivalTime = ticketRouteArrivalTime( ticket );
         transportType = ticketRouteTransportType( ticket );
+        trip = ticketRouteTrip( ticket );
         price = ticket.getPrice();
 
         String travelDuration = String.format("%02d:%02d:%02d", ticket.getRoute().getTravelDuration().toHours(), ticket.getRoute().getTravelDuration().toMinutesPart(), ticket.getRoute().getTravelDuration().toSecondsPart());
+        List<Long> routeIds = null;
 
-        TicketWithRouteDto ticketWithRouteDto = new TicketWithRouteDto( seatNumber, price, ticketClass, userId, passengerId, routeId, departureCity, arrivalCity, departureTime, arrivalTime, travelDuration, transportType );
+        TicketWithRouteDto ticketWithRouteDto = new TicketWithRouteDto( seatNumber, price, ticketType, userId, passengerId, trip, departureCity, arrivalCity, departureTime, arrivalTime, travelDuration, transportType, routeId, routeIds );
 
         return ticketWithRouteDto;
     }
@@ -203,5 +207,20 @@ public class TicketMapperImpl implements TicketMapper {
             return null;
         }
         return arrivalTime;
+    }
+
+    private Long ticketRouteTrip(Ticket ticket) {
+        if ( ticket == null ) {
+            return null;
+        }
+        Route route = ticket.getRoute();
+        if ( route == null ) {
+            return null;
+        }
+        Long trip = route.getTrip();
+        if ( trip == null ) {
+            return null;
+        }
+        return trip;
     }
 }

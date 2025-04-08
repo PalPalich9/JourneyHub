@@ -104,18 +104,27 @@ function User() {
     }
   };
 
-  const handleCancelTicket = async (routeId, seatNumber) => {
-    setTicketToCancel({ routeId, seatNumber });
+  const handleCancelTicket = (ticket) => {
+    setTicketToCancel(ticket);
     setOpenDialog(true);
   };
 
   const confirmCancelTicket = async () => {
     if (ticketToCancel) {
       try {
-        await api.post(`/routes/${ticketToCancel.routeId}/seats/${ticketToCancel.seatNumber}/cancel`);
-        fetchTickets();
+        const cancelRequest = {
+          routeIds: ticketToCancel.routeIds, // Используем routeIds из ticket
+          seatNumber: ticketToCancel.seatNumber,
+          passengerId: ticketToCancel.passengerId,
+        };
+        const response = await api.post('/tickets/cancel', cancelRequest);
+        if (response.status === 200) {
+          alert('Билет успешно отменён!');
+          fetchTickets();
+        }
       } catch (err) {
         console.error('Cancel ticket error:', err);
+        alert('Ошибка отмены билета: ' + (err.response?.data || err.message));
       }
     }
     setOpenDialog(false);
@@ -309,7 +318,7 @@ function User() {
                   />
 
                   <IconButton onClick={fetchTickets} disabled={loading} sx={{ color: '#757575' }}>
-                    {loading ? <CircularProgress size={24}  sx={{ color: '#757575', mr: 100 }} /> : <RefreshIcon />}
+                    {loading ? <CircularProgress size={24} sx={{ color: '#757575', mr: 100 }} /> : <RefreshIcon />}
                   </IconButton>
                 </Box>
 
@@ -322,7 +331,7 @@ function User() {
                     <TicketCard
                       key={`${ticket.routeId}-${ticket.seatNumber}`}
                       ticket={ticket}
-                      onCancel={handleCancelTicket}
+                      onCancel={() => handleCancelTicket(ticket)}
                     />
                   ))
                 )}

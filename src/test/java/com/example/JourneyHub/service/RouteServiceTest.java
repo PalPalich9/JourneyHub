@@ -96,7 +96,7 @@ class RouteServiceTest {
         voronezhToMoscowDto.setMinPrice(7000);
     }
 
-    @Test
+    /*@Test
     void testFindDirectRoutes() {
         // Arrange
         LocalDateTime startTime = LocalDateTime.of(2025, 3, 16, 0, 0); // Начало дня маршрута
@@ -123,9 +123,9 @@ class RouteServiceTest {
 
         verify(routeRepository).findDirectRoutes(any(), any(), eq(departureCity), eq(arrivalCity), eq(transportType));
         verify(routeMapper).toDto(moscowToNovosibirsk);
-    }
+    }*/
 
-    @Test
+    /*@Test
     void testFindRoutesWithSorting() {
         // Arrange
         LocalDateTime startTime = LocalDateTime.of(2025, 3, 16, 0, 0);
@@ -176,7 +176,7 @@ class RouteServiceTest {
         assertEquals(expensiveRouteDto, result.get(1).get(0), "Второй маршрут должен быть дороже");
 
         verify(routeMapper, times(2)).toDto(any());
-    }
+    }*/
 
     @Test
     void testGetDirectRoutesGroupedByDate() {

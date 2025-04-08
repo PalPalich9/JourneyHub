@@ -10,5 +10,6 @@ import org.mapstruct.Mapping;
 public interface RouteMapper {
     @Mapping(target = "minPrice", source = "minPrice")
     @Mapping(target = "departureTime", source = "departureTime")
+    @Mapping(target = "routeIds", source = "routeIds")
     RouteDto toDto(Route route);
 }

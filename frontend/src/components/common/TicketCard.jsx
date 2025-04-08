@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Box, Typography, Button, Fade } from '@mui/material';
 import TransportIcon from './TransportIcon';
 import { formatDate, formatTime, calculateDuration, formatTicketDuration } from '../../utils/dateUtilsTickets';
+import api from '../../api/api';
 
-const TicketCard = ({ ticket, onCancel }) => {
+const TicketCard = ({ ticket }) => {
   const [expanded, setExpanded] = useState(false);
   const departureTime = ticket.departureTime;
   const arrivalTime = ticket.arrivalTime;
@@ -13,7 +14,30 @@ const TicketCard = ({ ticket, onCancel }) => {
   const currentTime = new Date();
   const departureDateTime = new Date(departureTime);
   const timeDifferenceMinutes = (departureDateTime - currentTime) / (1000 * 60);
-  const canCancel = timeDifferenceMinutes > 20;
+  const canCancel = timeDifferenceMinutes > 0; // Можно отменить, если отправление ещё не прошло
+
+  const handleCancelTicket = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log('Ticket data:', ticket);
+      const cancelRequest = {
+        routeIds: ticket.routeIds || [ticket.routeId], // Используем routeIds из ticket
+        seatNumber: ticket.seatNumber,
+        passengerId: ticket.passengerId,
+      };
+      console.log('Cancel request:', cancelRequest);
+      const response = await api.post('/tickets/cancel', cancelRequest, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.status === 200) {
+        alert('Билет успешно отменён!');
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error('Cancel ticket error:', err);
+      alert('Ошибка отмены билета: ' + (err.response?.data || err.message));
+    }
+  };
 
   return (
     <Fade in={true} timeout={500}>
@@ -35,9 +59,9 @@ const TicketCard = ({ ticket, onCancel }) => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TransportIcon transportType={ticket.transportType} sx={{ color: '#1976d2', fontSize: 40 }} />
             <Box sx={{ ml: 3 }}>
-              {ticket.routeId && (
+              {ticket.trip && (
                 <Typography variant="caption" sx={{ color: '#757575', mb: 1, display: 'block' }}>
-                  Рейс {ticket.routeId}
+                  Рейс {ticket.trip}
                 </Typography>
               )}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -81,8 +105,8 @@ const TicketCard = ({ ticket, onCancel }) => {
                 Место: <Typography component="span" sx={{ color: '#1976d2' }}>{ticket.seatNumber}</Typography>
               </Typography>
               <Typography sx={{ fontWeight: 500, color: '#333' }}>
-                Класс: <Typography component="span" sx={{ color: ticket.ticketClass === 'luxury' ? '#D4A017' : '#1976d2' }}>
-                  {ticket.ticketClass === 'luxury' ? 'Люкс' : 'Эконом'}
+                Класс: <Typography component="span" sx={{ color: ticket.ticketType === 'luxury' ? '#D4A017' : '#1976d2' }}>
+                  {ticket.ticketType === 'luxury' ? 'Люкс' : 'Эконом'}
                 </Typography>
               </Typography>
               <Typography sx={{ fontWeight: 500, color: '#333' }}>
@@ -91,7 +115,7 @@ const TicketCard = ({ ticket, onCancel }) => {
             </Box>
             <Button
               variant="contained"
-              onClick={() => onCancel(ticket.routeId, ticket.seatNumber)}
+              onClick={handleCancelTicket}
               disabled={!canCancel}
               sx={{
                 borderRadius: '20px',

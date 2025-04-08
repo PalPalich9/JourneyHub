@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -23,7 +22,6 @@ public class TicketEventListener {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @EventListener
-    @Transactional
     public void handleTicketChange(TicketChangeEvent event) {
         Route route = routeRepository.findById(event.getTicket().getRoute().getId())
                 .orElseThrow(() -> new IllegalArgumentException("Маршрут не найден"));
