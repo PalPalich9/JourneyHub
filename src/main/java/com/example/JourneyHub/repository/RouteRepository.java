@@ -13,18 +13,7 @@ import java.util.stream.Stream;
 @Repository
 public interface RouteRepository extends JpaRepository<Route, Long> {
 
-    @Query(value = "SELECT * FROM routes r WHERE r.departure_city = :departureCity " +
-            "AND r.arrival_city = :arrivalCity " +
-            "AND r.departure_time >= :startTime " +
-            "AND r.departure_time <= :maxDepartureTime " +
-            "AND (:transportType IS NULL OR r.transport_type = :transportType)",
-            nativeQuery = true)
-    Stream<Route> findDirectRoutes(
-            @Param("startTime") LocalDateTime startTime,
-            @Param("maxDepartureTime") LocalDateTime maxDepartureTime,
-            @Param("departureCity") String departureCity,
-            @Param("arrivalCity") String arrivalCity,
-            @Param("transportType") String transportType);
+
 
     @Query(value = "SELECT * FROM routes r WHERE r.departure_time >= :minDepartureTime " +
             "AND r.departure_time <= :maxDepartureTime " +
@@ -41,24 +30,18 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
             @Param("departureCity") String departureCity,
             @Param("maxDepartureTimeForStartCity") LocalDateTime maxDepartureTimeForStartCity);
 
-    @Query(value = "SELECT * FROM routes r WHERE r.departure_time >= :startDate " +
+    @Query(value = "SELECT * FROM routes r " +
+            "WHERE r.departure_time >= :startDate " +
             "AND r.departure_time <= :endDate " +
             "AND r.departure_city = :departureCity " +
             "AND r.arrival_city = :arrivalCity " +
             "AND (:transportType IS NULL OR r.transport_type = :transportType) " +
             "ORDER BY DATE(r.departure_time) ASC, " +
-            "CASE :sortCriteria " +
-            "   WHEN 'CHEAPEST' THEN r.min_price " +
-            "   WHEN 'AVAILABILITY' THEN CASE WHEN r.has_available_tickets THEN 0 ELSE 1 END " +
-            "END ASC, " +
-            "CASE :sortCriteria " +
-            "   WHEN 'EXPENSIVE' THEN r.min_price " +
-            "END DESC, " +
-            "CASE :sortCriteria " +
-            "   WHEN 'DURATION' THEN CAST('1970-01-01 ' || r.travel_duration AS TIMESTAMP) " +
-            "   WHEN 'DEFAULT' THEN r.departure_time " +
-            "   ELSE r.departure_time " +
-            "END ASC",
+            "CASE WHEN :sortCriteria = 'CHEAPEST' THEN r.min_price END ASC, " +
+            "CASE WHEN :sortCriteria = 'AVAILABILITY' THEN CASE WHEN r.has_available_tickets THEN 0 ELSE 1 END END ASC, " +
+            "CASE WHEN :sortCriteria = 'EXPENSIVE' THEN r.min_price END DESC, " +
+            "CASE WHEN :sortCriteria = 'DURATION' THEN r.travel_duration END ASC, " +
+            "CASE WHEN :sortCriteria = 'DEFAULT' THEN r.departure_time END ASC",
             nativeQuery = true)
     List<Route> findDirectRoutesWithSort(
             @Param("departureCity") String departureCity,
@@ -68,23 +51,6 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
             @Param("transportType") String transportType,
             @Param("sortCriteria") String sortCriteria);
 
-    // Новый метод для поиска маршрутов и рейсов
-    @Query(value = "SELECT r.* FROM routes r " +
-            "WHERE r.trip IN (" +
-            "    SELECT DISTINCT trip FROM routes " +
-            "    WHERE departure_city = :departureCity " +
-            "    UNION " +
-            "    SELECT DISTINCT trip FROM routes " +
-            "    WHERE arrival_city = :arrivalCity" +
-            ") " +
-            "AND r.departure_time >= :startTime " +
-            "AND r.departure_time <= :maxDepartureTime " +
-            "AND (:transportType IS NULL OR r.transport_type = :transportType)",
-            nativeQuery = true)
-    List<Route> findRoutesAndTrips(
-            @Param("departureCity") String departureCity,
-            @Param("arrivalCity") String arrivalCity,
-            @Param("startTime") LocalDateTime startTime,
-            @Param("maxDepartureTime") LocalDateTime maxDepartureTime,
-            @Param("transportType") String transportType);
+
+
 }

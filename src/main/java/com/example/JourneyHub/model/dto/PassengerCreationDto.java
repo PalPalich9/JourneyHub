@@ -1,6 +1,5 @@
 package com.example.JourneyHub.model.dto;
 
-
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
@@ -17,7 +16,10 @@ public class PassengerCreationDto {
 
     private String patronymic;
 
+    private String passportSeries;
+
     @NotNull(message = "Passport number is required")
+    @Pattern(regexp = "^\\d{6}$", message = "Passport number must be 6 digits")
     private String passportNumber;
 
     @NotNull(message = "Gender is required")
@@ -26,5 +28,4 @@ public class PassengerCreationDto {
 
     @NotNull(message = "Birth date is required")
     private LocalDate birthDate;
-
 }

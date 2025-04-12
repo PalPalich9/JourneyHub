@@ -8,5 +8,4 @@ import java.util.Optional;
 
 @Repository
 public interface PassengerRepository extends JpaRepository<Passenger, Long> {
-    Optional<Passenger> findByPassportNumber(String passportNumber);
-}
+    Optional<Passenger> findByPassportSeriesAndPassportNumber(String passportSeries, String passportNumber);}

@@ -2,6 +2,7 @@ com\example\JourneyHub\config\JacksonConfig$1.class
 com\example\JourneyHub\model\entity\TicketId.class
 com\example\JourneyHub\model\enums\TicketClass.class
 com\example\JourneyHub\repository\RouteRepository.class
+com\example\JourneyHub\service\route\RouteDataGenerator.class
 com\example\JourneyHub\controller\TicketController.class
 com\example\JourneyHub\model\mapper\TicketMapperImpl.class
 com\example\JourneyHub\config\RedisConfig.class
@@ -11,11 +12,13 @@ com\example\JourneyHub\model\entity\RouteWithMetrics.class
 com\example\JourneyHub\model\mapper\UserMapperImpl.class
 com\example\JourneyHub\controller\UserController.class
 com\example\JourneyHub\repository\UserRepository.class
+com\example\JourneyHub\exception\InvalidPassengerDataException.class
 com\example\JourneyHub\model\dto\UserDto.class
 com\example\JourneyHub\model\dto\PassengerCreationDto.class
 com\example\JourneyHub\model\mapper\RouteMapper.class
 com\example\JourneyHub\config\SecurityConfig.class
 com\example\JourneyHub\model\dto\TicketDto.class
+com\example\JourneyHub\service\route\RouteFinder$1.class
 com\example\JourneyHub\config\JacksonConfig.class
 com\example\JourneyHub\config\CacheConfig.class
 com\example\JourneyHub\model\entity\User.class
@@ -24,6 +27,7 @@ com\example\JourneyHub\model\entity\Ticket.class
 com\example\JourneyHub\model\entity\UserPassengerId.class
 com\example\JourneyHub\JourneyHubApplication.class
 com\example\JourneyHub\model\entity\Route.class
+com\example\JourneyHub\exception\InvalidPasswordException.class
 com\example\JourneyHub\model\dto\TicketIdTypeDto.class
 com\example\JourneyHub\service\TicketService.class
 com\example\JourneyHub\config\JacksonConfig$2.class
@@ -36,10 +40,13 @@ com\example\JourneyHub\controller\AuthController.class
 com\example\JourneyHub\service\PassengerService.class
 com\example\JourneyHub\repository\TicketRepository.class
 com\example\JourneyHub\model\mapper\TicketMapper.class
+com\example\JourneyHub\service\route\RouteFinder.class
+com\example\JourneyHub\exception\ResourceNotFoundException.class
 com\example\JourneyHub\model\dto\PassengerDto.class
 com\example\JourneyHub\model\dto\UserRegistrationDto.class
 com\example\JourneyHub\model\enums\SortCriteria.class
 com\example\JourneyHub\repository\PassengerRepository.class
+com\example\JourneyHub\model\dto\SeatDto.class
 com\example\JourneyHub\controller\RouteController.class
 com\example\JourneyHub\model\entity\UserPassenger.class
 com\example\JourneyHub\model\dto\MultipleTicketBookingRequest.class
@@ -47,7 +54,7 @@ com\example\JourneyHub\exception\ErrorHandler$ErrorResponse.class
 com\example\JourneyHub\service\RouteService.class
 com\example\JourneyHub\service\CustomUserDetailsService.class
 com\example\JourneyHub\model\dto\JwtResponseDto.class
-com\example\JourneyHub\service\RouteService$1.class
+com\example\JourneyHub\exception\DuplicateEmailException.class
 com\example\JourneyHub\security\JwtUtil.class
 com\example\JourneyHub\event\TicketChangeEvent.class
 com\example\JourneyHub\security\JwtAuthenticationFilter.class

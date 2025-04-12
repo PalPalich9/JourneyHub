@@ -1,6 +1,8 @@
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\TicketDto.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\service\route\RouteDataGenerator.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\entity\TicketId.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\exception\ErrorHandler.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\exception\DuplicateEmailException.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\repository\PassengerRepository.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\MultipleTicketBookingRequest.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\utils\CacheUtils.java
@@ -13,11 +15,13 @@ C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\Ticket
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\security\CustomUserDetails.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\config\SecurityConfig.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\repository\UserPassengerRepository.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\exception\InvalidPasswordException.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\service\TicketService.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\enums\TicketClass.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\PassengerCreationDto.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\config\RedisConfig.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\controller\RouteController.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\service\route\RouteFinder.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\RouteDto.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\controller\TicketController.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\mapper\TicketMapper.java
@@ -34,7 +38,9 @@ C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\controller\Passe
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\JwtResponseDto.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\mapper\PassengerMapper.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\config\JacksonConfig.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\exception\InvalidPassengerDataException.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\repository\UserRepository.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\dto\SeatDto.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\mapper\RouteMapper.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\entity\RouteWithMetrics.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\service\RouteService.java
@@ -45,6 +51,7 @@ C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\service\CustomUs
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\JourneyHubApplication.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\entity\UserPassengerId.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\event\TicketChangeEvent.java
+C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\exception\ResourceNotFoundException.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\listener\TicketEventListener.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\entity\User.java
 C:\javaProjects\JourneyHub\src\main\java\com\example\JourneyHub\model\entity\UserPassenger.java

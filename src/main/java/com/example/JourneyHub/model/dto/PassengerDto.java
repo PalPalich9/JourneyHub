@@ -13,6 +13,7 @@ public class PassengerDto {
     private String name;
     private String surname;
     private String patronymic;
+    private String passportSeries;
     private String passportNumber;
     private String gender;
     private LocalDate birthDate;

@@ -9,8 +9,7 @@ const InfoPassengerModal = ({ open, onClose, passenger }) => {
     return `${day}.${month}.${year}`;
   };
 
-  const isBirthCertificate = passenger?.passportNumber?.length === 6;
-  const passportNumber = isBirthCertificate ? passenger?.passportNumber : passenger?.passportNumber?.slice(4);
+  const isBirthCertificate = !passenger?.passportSeries;
 
   return (
     <Modal open={open} onClose={onClose}>
@@ -53,13 +52,13 @@ const InfoPassengerModal = ({ open, onClose, passenger }) => {
           {!isBirthCertificate && (
             <Box sx={{ mb: 2 }}>
               <Typography component="span" sx={{ fontWeight: 500, color: '#333' }}>
-                Серия: <Typography component="span" sx={{ color: '#757575', ml: 1 }}>{passenger?.passportNumber?.slice(0, 4) || 'Не указана'}</Typography>
+                Серия: <Typography component="span" sx={{ color: '#757575', ml: 1 }}>{passenger?.passportSeries || 'Не указана'}</Typography>
               </Typography>
             </Box>
           )}
           <Box sx={{ mb: 2 }}>
             <Typography component="span" sx={{ fontWeight: 500, color: '#333' }}>
-              Номер: <Typography component="span" sx={{ color: '#757575', ml: 1 }}>{passportNumber || 'Не указан'}</Typography>
+              Номер: <Typography component="span" sx={{ color: '#757575', ml: 1 }}>{passenger?.passportNumber || 'Не указан'}</Typography>
             </Typography>
           </Box>
           <Box sx={{ mb: 2 }}>

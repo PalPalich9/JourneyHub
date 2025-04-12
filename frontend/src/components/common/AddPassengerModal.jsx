@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Box, Button, Typography, TextField, MenuItem, Select, FormHelperText, Modal, Fade } from '@mui/material';
 import { Person as PersonIcon, CalendarToday as CalendarIcon, Badge as AssignmentIndIcon, Wc as GenderIcon } from '@mui/icons-material';
+
 const AddPassengerModal = ({ open, onClose, onSave, error }) => {
   const [newPassenger, setNewPassenger] = useState({
     name: '',
@@ -115,7 +116,7 @@ const AddPassengerModal = ({ open, onClose, onSave, error }) => {
     const formattedDate = `${day}.${month}.${year}`;
     const age = calculateAge(formattedDate);
     if (age < 14 && passportSeries) {
-      onSave(null, 'Паспортная серия не должна быть указана для пассажиров младше 14 лет');
+      onSave(null, 'Серия паспорта не должна быть указана для пассажиров младше 14 лет');
       return;
     }
     if (age >= 14 && (!passportSeries || passportSeries.length !== 4)) {
@@ -133,7 +134,8 @@ const AddPassengerModal = ({ open, onClose, onSave, error }) => {
       name,
       surname,
       patronymic: patronymic || null,
-      passportNumber: passportSeries ? `${passportSeries}${passportNumber}` : passportNumber,
+      passportSeries,
+      passportNumber,
       gender: formattedGender,
       birthDate: formattedBirthDate,
     };

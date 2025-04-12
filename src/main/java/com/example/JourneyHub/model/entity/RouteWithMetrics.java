@@ -34,7 +34,7 @@ public class RouteWithMetrics {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         RouteWithMetrics that = (RouteWithMetrics) o;
-        return path.equals(that.path); // Сравнение только по маршрутам
+        return path.equals(that.path);
     }
 
     @Override

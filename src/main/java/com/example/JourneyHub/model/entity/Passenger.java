@@ -21,7 +21,10 @@ public class Passenger {
     private String surname;
     private String patronymic;
 
-    @Column(name = "passport_number", unique = true, nullable = false)
+    @Column(name = "passport_series", length = 4)
+    private String passportSeries;
+
+    @Column(name = "passport_number", nullable = false, length = 6)
     private String passportNumber;
     @Column(name = "gender", nullable = false)
     private String gender;

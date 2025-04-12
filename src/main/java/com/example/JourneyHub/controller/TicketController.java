@@ -4,6 +4,7 @@ import com.example.JourneyHub.model.dto.MultipleTicketBookingRequest;
 import com.example.JourneyHub.model.dto.TicketDto;
 import com.example.JourneyHub.service.TicketService;
 import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -36,43 +37,19 @@ public class TicketController {
 
     @PostMapping("/tickets/book-multiple")
     @Transactional
-    public ResponseEntity<?> bookMultipleTickets(@RequestBody List<MultipleTicketBookingRequest> bookingRequests) {
+    public ResponseEntity<List<TicketDto>> bookMultipleTickets(@Valid @RequestBody List<MultipleTicketBookingRequest> bookingRequests) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-
-        if (bookingRequests == null || bookingRequests.isEmpty()) {
-            return ResponseEntity.badRequest().body("Список билетов пуст");
-        }
-
-        try {
-            List<TicketDto> bookedTickets = ticketService.bookMultipleTickets(email, bookingRequests);
-            return ResponseEntity.ok(bookedTickets);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Внутренняя ошибка сервера: " + e.getMessage());
-        }
+        List<TicketDto> bookedTickets = ticketService.bookMultipleTickets(email, bookingRequests);
+        return ResponseEntity.ok(bookedTickets);
     }
 
     @PostMapping("/tickets/cancel")
     @Transactional
-    public ResponseEntity<?> cancelTickets(@RequestBody MultipleTicketBookingRequest cancelRequest) {
+    public ResponseEntity<String> cancelTickets(@Valid @RequestBody MultipleTicketBookingRequest cancelRequest) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-
-        try {
-            ticketService.cancelTicketsForRouteOrTrip(email, cancelRequest);
-            return ResponseEntity.ok().body("Билеты успешно отменены");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(e.getMessage());
-        } catch (SecurityException e) {
-            return ResponseEntity.status(403).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Внутренняя ошибка сервера: " + e.getMessage());
-        }
+        ticketService.cancelTicketsForRouteOrTrip(email, cancelRequest);
+        return ResponseEntity.ok("Билеты успешно отменены");
     }
 }

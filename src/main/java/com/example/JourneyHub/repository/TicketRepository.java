@@ -28,13 +28,5 @@ public interface TicketRepository extends JpaRepository<Ticket, TicketId> {
             "ORDER BY t.route.departureTime ASC")
     List<Ticket> findTicketsWithRouteByPassengerId(@Param("passengerId") Long passengerId, @Param("showHistory") boolean showHistory);
 
-    @Query("SELECT t FROM Ticket t JOIN FETCH t.route r " +
-            "WHERE (r.id = :routeId OR r.trip = :routeId) " +
-            "AND r.departureTime >= (SELECT MIN(r2.departureTime) FROM Route r2 WHERE (r2.id = :routeId OR r2.trip = :routeId) AND r2.departureCity = :departureCity) " +
-            "AND r.arrivalTime <= (SELECT MAX(r3.arrivalTime) FROM Route r3 WHERE (r3.id = :routeId OR r3.trip = :routeId) AND r3.arrivalCity = :arrivalCity)")
-    List<Ticket> findTicketsByRouteIdOrTrip(@Param("routeId") Long routeId,
-                                            @Param("departureCity") String departureCity,
-                                            @Param("arrivalCity") String arrivalCity);
-    @Query("SELECT t FROM Ticket t JOIN t.route r WHERE r.trip = :trip")
-    List<Ticket> findAllByTrip(@Param("trip") Long trip);
+
 }

@@ -5,6 +5,7 @@ import com.example.JourneyHub.model.dto.UserDto;
 import com.example.JourneyHub.model.dto.UserRegistrationDto;
 import com.example.JourneyHub.security.JwtUtil;
 import com.example.JourneyHub.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,7 +29,7 @@ public class AuthController {
     private final JwtUtil jwtUtil;
 
     @PostMapping("/register")
-    public ResponseEntity<UserDto> register(@RequestBody UserRegistrationDto registrationDto) {
+    public ResponseEntity<UserDto> register(@Valid @RequestBody UserRegistrationDto registrationDto) {
         UserDto registeredUser = userService.registerUser(registrationDto);
         return ResponseEntity.ok(registeredUser);
     }
@@ -38,11 +39,7 @@ public class AuthController {
         String email = credentials.get("email");
         String password = credentials.get("password");
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(email, password)
-        );
-
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        UserDetails userDetails = userService.login(email, password);
         String jwt = jwtUtil.generateToken(userDetails);
 
         return ResponseEntity.ok(new JwtResponseDto(jwt));
