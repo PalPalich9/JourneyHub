@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Box, Button, TextField, Typography, Tabs, Tab, Paper, InputAdornment, Fade } from '@mui/material';
@@ -75,6 +75,9 @@ function Auth() {
       .oneOf([Yup.ref('password'), null], 'Пароли должны совпадать')
       .required('Обязательное поле'),
   });
+
+  const loginInitialValues = { email: '', password: '' };
+  const registerInitialValues = { surname: '', name: '', email: '', password: '', confirmPassword: '' };
 
   const handleLoginSubmit = async (values, { setSubmitting, setFieldError }) => {
     try {
@@ -279,308 +282,320 @@ function Auth() {
               {isLogin ? (
                 <Box sx={{ width: '100%' }}>
                   <Formik
-                    initialValues={{ email: '', password: '' }}
+                    initialValues={loginInitialValues}
                     validationSchema={loginValidationSchema}
                     onSubmit={handleLoginSubmit}
+                    enableReinitialize
                   >
-                    {({ errors, touched, isSubmitting }) => (
-                      <Form>
-                        <Field
-                          as={TextField}
-                          name="email"
-                          label="E-mail"
-                          fullWidth
-                          margin="normal"
-                          error={touched.email && !!errors.email}
-                          helperText={touched.email && errors.email}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <EmailIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                    {({ errors, touched, isSubmitting, resetForm }) => {
+                      useEffect(() => {
+                        resetForm({ values: loginInitialValues });
+                      }, [isLogin]);
+                      return (
+                        <Form>
+                          <Field
+                            as={TextField}
+                            name="email"
+                            label="E-mail"
+                            fullWidth
+                            margin="normal"
+                            error={touched.email && !!errors.email}
+                            helperText={touched.email && errors.email}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <EmailIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
+                            }}
+                          />
+                          <Field
+                            as={TextField}
+                            name="password"
+                            label="Пароль"
+                            type="password"
+                            fullWidth
+                            margin="normal"
+                            error={touched.password && !!errors.password}
+                            helperText={touched.password && errors.password}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <LockIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                            },
-                          }}
-                        />
-                        <Field
-                          as={TextField}
-                          name="password"
-                          label="Пароль"
-                          type="password"
-                          fullWidth
-                          margin="normal"
-                          error={touched.password && !!errors.password}
-                          helperText={touched.password && errors.password}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <LockIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                            }}
+                          />
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            disabled={isSubmitting}
+                            sx={{
+                              borderRadius: '20px',
+                              background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+                              fontSize: '1.1rem',
+                              fontWeight: 600,
+                              py: 1.5,
+                              mt: 2,
+                              textTransform: 'none',
+                              '&:hover': {
+                                background: 'linear-gradient(90deg, #1565c0 0%, #2196f3 100%)',
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
-                              },
-                            },
-                          }}
-                        />
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          fullWidth
-                          disabled={isSubmitting}
-                          sx={{
-                            borderRadius: '20px',
-                            background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
-                            fontSize: '1.1rem',
-                            fontWeight: 600,
-                            py: 1.5,
-                            mt: 2,
-                            textTransform: 'none',
-                            '&:hover': {
-                              background: 'linear-gradient(90deg, #1565c0 0%, #2196f3 100%)',
-                            },
-                          }}
-                        >
-                          Войти
-                        </Button>
-                      </Form>
-                    )}
+                            }}
+                          >
+                            Войти
+                          </Button>
+                        </Form>
+                      );
+                    }}
                   </Formik>
                 </Box>
               ) : (
                 <Box sx={{ width: '100%' }}>
                   <Formik
-                    initialValues={{ surname: '', name: '', email: '', password: '', confirmPassword: '' }}
+                    initialValues={registerInitialValues}
                     validationSchema={registerValidationSchema}
                     onSubmit={handleRegisterSubmit}
+                    enableReinitialize
                   >
-                    {({ errors, touched, isSubmitting }) => (
-                      <Form>
-                        <Field
-                          as={TextField}
-                          name="surname"
-                          label="Фамилия"
-                          fullWidth
-                          margin="normal"
-                          error={touched.surname && !!errors.surname}
-                          helperText={touched.surname && errors.surname}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <PersonIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                    {({ errors, touched, isSubmitting, resetForm }) => {
+                      useEffect(() => {
+                        resetForm({ values: registerInitialValues });
+                      }, [isLogin]);
+                      return (
+                        <Form>
+                          <Field
+                            as={TextField}
+                            name="surname"
+                            label="Фамилия"
+                            fullWidth
+                            margin="normal"
+                            error={touched.surname && !!errors.surname}
+                            helperText={touched.surname && errors.surname}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <PersonIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
+                            }}
+                          />
+                          <Field
+                            as={TextField}
+                            name="name"
+                            label="Имя"
+                            fullWidth
+                            margin="normal"
+                            error={touched.name && !!errors.name}
+                            helperText={touched.name && errors.name}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <PersonIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                            },
-                          }}
-                        />
-                        <Field
-                          as={TextField}
-                          name="name"
-                          label="Имя"
-                          fullWidth
-                          margin="normal"
-                          error={touched.name && !!errors.name}
-                          helperText={touched.name && errors.name}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <PersonIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                            }}
+                          />
+                          <Field
+                            as={TextField}
+                            name="email"
+                            label="E-mail"
+                            fullWidth
+                            margin="normal"
+                            error={touched.email && !!errors.email}
+                            helperText={touched.email && errors.email}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <EmailIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                            },
-                          }}
-                        />
-                        <Field
-                          as={TextField}
-                          name="email"
-                          label="E-mail"
-                          fullWidth
-                          margin="normal"
-                          error={touched.email && !!errors.email}
-                          helperText={touched.email && errors.email}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <EmailIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                            }}
+                          />
+                          <Field
+                            as={TextField}
+                            name="password"
+                            label="Пароль"
+                            type="password"
+                            fullWidth
+                            margin="normal"
+                            error={touched.password && !!errors.password}
+                            helperText={touched.password && errors.password}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <LockIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
+                            }}
+                          />
+                          <Field
+                            as={TextField}
+                            name="confirmPassword"
+                            label="Повторите пароль"
+                            type="password"
+                            fullWidth
+                            margin="normal"
+                            error={touched.confirmPassword && !!errors.confirmPassword}
+                            helperText={touched.confirmPassword && errors.confirmPassword}
+                            InputProps={{
+                              startAdornment: (
+                                <InputAdornment position="start">
+                                  <LockIcon sx={{ color: '#1976d2' }} />
+                                </InputAdornment>
+                              ),
+                            }}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                borderRadius: '10px',
+                                backgroundColor: '#fff',
+                                '&:hover fieldset': {
+                                  borderColor: '#42a5f5',
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: '#1976d2',
+                                },
                               },
-                            },
-                          }}
-                        />
-                        <Field
-                          as={TextField}
-                          name="password"
-                          label="Пароль"
-                          type="password"
-                          fullWidth
-                          margin="normal"
-                          error={touched.password && !!errors.password}
-                          helperText={touched.password && errors.password}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <LockIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
+                              '& .MuiInputLabel-root': {
+                                color: '#757575',
+                                '&.Mui-focused': {
+                                  color: '#1976d2',
+                                },
                               },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
+                            }}
+                          />
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            disabled={isSubmitting}
+                            sx={{
+                              borderRadius: '20px',
+                              background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
+                              fontSize: '1.1rem',
+                              fontWeight: 600,
+                              py: 1.5,
+                              mt: 2,
+                              textTransform: 'none',
+                              '&:hover': {
+                                background: 'linear-gradient(90deg, #1565c0 0%, #2196f3 100%)',
                               },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
-                              },
-                            },
-                          }}
-                        />
-                        <Field
-                          as={TextField}
-                          name="confirmPassword"
-                          label="Повторите пароль"
-                          type="password"
-                          fullWidth
-                          margin="normal"
-                          error={touched.confirmPassword && !!errors.confirmPassword}
-                          helperText={touched.confirmPassword && errors.confirmPassword}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <LockIcon sx={{ color: '#1976d2' }} />
-                              </InputAdornment>
-                            ),
-                          }}
-                          sx={{
-                            '& .MuiOutlinedInput-root': {
-                              borderRadius: '10px',
-                              backgroundColor: '#fff',
-                              '&:hover fieldset': {
-                                borderColor: '#42a5f5',
-                              },
-                              '&.Mui-focused fieldset': {
-                                borderColor: '#1976d2',
-                              },
-                            },
-                            '& .MuiInputLabel-root': {
-                              color: '#757575',
-                              '&.Mui-focused': {
-                                color: '#1976d2',
-                              },
-                            },
-                          }}
-                        />
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          fullWidth
-                          disabled={isSubmitting}
-                          sx={{
-                            borderRadius: '20px',
-                            background: 'linear-gradient(90deg, #1976d2 0%, #42a5f5 100%)',
-                            fontSize: '1.1rem',
-                            fontWeight: 600,
-                            py: 1.5,
-                            mt: 2,
-                            textTransform: 'none',
-                            '&:hover': {
-                              background: 'linear-gradient(90deg, #1565c0 0%, #2196f3 100%)',
-                            },
-                          }}
-                        >
-                          Зарегистрироваться
-                        </Button>
-                      </Form>
-                    )}
+                            }}
+                          >
+                            Зарегистрироваться
+                          </Button>
+                        </Form>
+                      );
+                    }}
                   </Formik>
                 </Box>
               )}
