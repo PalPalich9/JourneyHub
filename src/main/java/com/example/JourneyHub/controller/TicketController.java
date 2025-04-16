@@ -23,17 +23,19 @@ public class TicketController {
 
     private final TicketService ticketService;
 
+
     @GetMapping("/routes/seats")
     public ResponseEntity<List<Map<String, Object>>> getTicketsGroupedByRoute(
-            @RequestParam("routeIds") List<String> routeIdsParam) {
-        List<List<Long>> routeIds = routeIdsParam.stream()
-                .map(group -> Arrays.stream(group.split(","))
-                        .map(String::trim)
-                        .map(Long::parseLong)
-                        .collect(Collectors.toList()))
+            @RequestParam("routeIds") String routeIdsParam) {
+        List<Long> routeIdsList = Arrays.stream(routeIdsParam.split(","))
+                .map(String::trim)
+                .map(Long::parseLong)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ticketService.getTicketsGroupedByRoute(routeIds));
+        List<List<Long>> routeIds = List.of(routeIdsList);
+        List<Map<String, Object>> result = ticketService.getTicketsGroupedByRoute(routeIds);
+        return ResponseEntity.ok(result);
     }
+
 
     @PostMapping("/tickets/book-multiple")
     @Transactional

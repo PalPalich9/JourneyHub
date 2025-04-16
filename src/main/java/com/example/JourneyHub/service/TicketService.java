@@ -160,14 +160,15 @@ public class TicketService {
     }
 
     private List<TicketWithRouteDto> groupTicketsByTrip(List<Ticket> tickets) {
-        Map<String, List<Ticket>> groupedByTripAndSeat = tickets.stream()
+        Map<String, List<Ticket>> groupedByTripSeatAndPassenger = tickets.stream()
                 .collect(Collectors.groupingBy(
-                        t -> t.getRoute().getTrip() + "_" + t.getSeatNumber(),
+                        t -> t.getRoute().getTrip() + "_" + t.getSeatNumber() + "_" +
+                                (t.getPassenger() != null ? t.getPassenger().getId() : "null"),
                         Collectors.toList()
                 ));
 
         List<TicketWithRouteDto> result = new ArrayList<>();
-        for (List<Ticket> ticketGroup : groupedByTripAndSeat.values()) {
+        for (List<Ticket> ticketGroup : groupedByTripSeatAndPassenger.values()) {
             if (ticketGroup.size() == 1) {
                 result.add(ticketMapper.toTicketWithRouteDto(ticketGroup.get(0)));
             } else {
@@ -205,50 +206,90 @@ public class TicketService {
         return result;
     }
 
-    public List<Map<String, Object>> getTicketsGroupedByRoute(List<List<Long>> routeIds) {
+    public List<Map<String, Object>> getTicketsGroupedByRoute(List<List<Long>> routeIdsGroups) {
         List<Map<String, Object>> result = new ArrayList<>();
 
-        for (List<Long> routeIdGroup : routeIds) {
-            List<Route> requestedRoutes = routeRepository.findAllById(routeIdGroup);
-            if (requestedRoutes.isEmpty() || requestedRoutes.size() != routeIdGroup.size()) {
-                throw new ResourceNotFoundException("Некоторые маршруты из группы " + routeIdGroup + " не найдены", "ROUTES_NOT_FOUND");
+        List<Long> allRouteIds = routeIdsGroups.stream()
+                .flatMap(List::stream)
+                .distinct()
+                .collect(Collectors.toList());
+
+        List<Route> requestedRoutes = routeRepository.findAllById(allRouteIds);
+        if (requestedRoutes.size() != allRouteIds.size()) {
+            throw new ResourceNotFoundException("Некоторые маршруты из списка " + allRouteIds + " не найдены", "ROUTES_NOT_FOUND");
+        }
+
+        Map<Long, List<Route>> routesByTrip = requestedRoutes.stream()
+                .collect(Collectors.groupingBy(Route::getTrip));
+
+        for (List<Long> routeIdGroup : routeIdsGroups) {
+            Set<Long> groupTrips = routeIdGroup.stream()
+                    .map(routeId -> requestedRoutes.stream()
+                            .filter(r -> r.getId().equals(routeId))
+                            .findFirst()
+                            .map(Route::getTrip)
+                            .orElseThrow(() -> new ResourceNotFoundException("Маршрут " + routeId + " не найден", "ROUTE_NOT_FOUND")))
+                    .collect(Collectors.toSet());
+
+            for (Long trip : groupTrips) {
+                List<Long> tripRouteIds = routeIdGroup.stream()
+                        .filter(routeId -> requestedRoutes.stream()
+                                .filter(r -> r.getId().equals(routeId))
+                                .findFirst()
+                                .map(r -> r.getTrip().equals(trip))
+                                .orElse(false))
+                        .collect(Collectors.toList());
+
+                if (tripRouteIds.isEmpty()) {
+                    continue;
+                }
+
+                List<Route> tripRoutes = routesByTrip.get(trip);
+                if (tripRoutes == null) {
+                    throw new ResourceNotFoundException("Маршруты для trip " + trip + " не найдены", "TRIP_NOT_FOUND");
+                }
+
+                if (!tripRoutes.stream().map(Route::getId).collect(Collectors.toSet()).containsAll(tripRouteIds)) {
+                    throw new IllegalArgumentException("Не все маршруты из группы " + tripRouteIds + " принадлежат trip " + trip);
+                }
+
+                String transportType = tripRoutes.get(0).getTransportType();
+                List<Ticket> requestedTickets = ticketRepository.findByRoute_IdIn(tripRouteIds);
+                Map<Integer, List<Ticket>> ticketsBySeatNumber = requestedTickets.stream()
+                        .collect(Collectors.groupingBy(Ticket::getSeatNumber));
+
+                List<Map<String, Object>> seatsForGroup = new ArrayList<>();
+                for (Integer seatNumber : ticketsBySeatNumber.keySet()) {
+                    List<Ticket> ticketsForSeat = ticketsBySeatNumber.get(seatNumber);
+                    boolean hasAllRoutes = tripRouteIds.stream()
+                            .allMatch(routeId -> ticketsForSeat.stream()
+                                    .anyMatch(ticket -> ticket.getRoute().getId().equals(routeId)));
+                    if (!hasAllRoutes) {
+                        continue;
+                    }
+
+                    boolean isAvailable = ticketsForSeat.stream()
+                            .allMatch(ticket -> ticket.getPassenger() == null);
+                    int totalPrice = ticketsForSeat.stream()
+                            .mapToInt(Ticket::getPrice)
+                            .sum();
+                    String ticketType = ticketsForSeat.get(0).getTicketType().toString();
+
+                    Map<String, Object> seatInfo = new TreeMap<>();
+                    seatInfo.put("isAvailable", isAvailable);
+                    seatInfo.put("seatNumber", seatNumber);
+                    seatInfo.put("price", totalPrice);
+                    seatInfo.put("ticketType", ticketType);
+                    seatsForGroup.add(seatInfo);
+                }
+
+                seatsForGroup.sort(Comparator.comparing(m -> (Integer) m.get("seatNumber")));
+                Map<String, Object> groupResult = new TreeMap<>();
+                groupResult.put("ticketId", new TicketIdTypeDto(trip, transportType));
+                groupResult.put("routeIds", tripRouteIds);
+                groupResult.put("seats", seatsForGroup);
+                result.add(groupResult);
             }
-
-            Long trip = requestedRoutes.get(0).getTrip();
-            if (!requestedRoutes.stream().allMatch(r -> r.getTrip().equals(trip))) {
-                throw new IllegalArgumentException("Все маршруты в группе " + routeIdGroup + " должны относиться к одному trip");
-            }
-
-            String transportType = requestedRoutes.get(0).getTransportType();
-            List<Ticket> requestedTickets = ticketRepository.findByRoute_IdIn(routeIdGroup);
-
-            Map<Integer, List<Ticket>> ticketsBySeatNumber = requestedTickets.stream()
-                    .collect(Collectors.groupingBy(Ticket::getSeatNumber));
-
-            List<Map<String, Object>> seatsForGroup = new ArrayList<>();
-            for (Integer seatNumber : ticketsBySeatNumber.keySet()) {
-                List<Ticket> ticketsForSeat = ticketsBySeatNumber.get(seatNumber);
-                boolean isAvailable = ticketsForSeat.stream()
-                        .allMatch(ticket -> ticket.getPassenger() == null);
-                int totalPrice = ticketsForSeat.stream()
-                        .mapToInt(Ticket::getPrice)
-                        .sum();
-                String ticketType = ticketsForSeat.get(0).getTicketType().toString();
-
-                Map<String, Object> seatInfo = new TreeMap<>();
-                seatInfo.put("isAvailable", isAvailable);
-                seatInfo.put("seatNumber", seatNumber);
-                seatInfo.put("price", totalPrice);
-                seatInfo.put("ticketType", ticketType);
-                seatsForGroup.add(seatInfo);
-            }
-
-            seatsForGroup.sort(Comparator.comparing(m -> (Integer) m.get("seatNumber")));
-            Map<String, Object> groupResult = new TreeMap<>();
-            groupResult.put("ticketId", new TicketIdTypeDto(trip, transportType));
-            groupResult.put("routeIds", routeIdGroup);
-            groupResult.put("seats", seatsForGroup);
-            result.add(groupResult);
         }
 
         return result;

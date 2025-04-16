@@ -30,27 +30,5 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
             @Param("departureCity") String departureCity,
             @Param("maxDepartureTimeForStartCity") LocalDateTime maxDepartureTimeForStartCity);
 
-    @Query(value = "SELECT * FROM routes r " +
-            "WHERE r.departure_time >= :startDate " +
-            "AND r.departure_time <= :endDate " +
-            "AND r.departure_city = :departureCity " +
-            "AND r.arrival_city = :arrivalCity " +
-            "AND (:transportType IS NULL OR r.transport_type = :transportType) " +
-            "ORDER BY DATE(r.departure_time) ASC, " +
-            "CASE WHEN :sortCriteria = 'CHEAPEST' THEN r.min_price END ASC, " +
-            "CASE WHEN :sortCriteria = 'AVAILABILITY' THEN CASE WHEN r.has_available_tickets THEN 0 ELSE 1 END END ASC, " +
-            "CASE WHEN :sortCriteria = 'EXPENSIVE' THEN r.min_price END DESC, " +
-            "CASE WHEN :sortCriteria = 'DURATION' THEN r.travel_duration END ASC, " +
-            "CASE WHEN :sortCriteria = 'DEFAULT' THEN r.departure_time END ASC",
-            nativeQuery = true)
-    List<Route> findDirectRoutesWithSort(
-            @Param("departureCity") String departureCity,
-            @Param("arrivalCity") String arrivalCity,
-            @Param("startDate") LocalDateTime startDate,
-            @Param("endDate") LocalDateTime endDate,
-            @Param("transportType") String transportType,
-            @Param("sortCriteria") String sortCriteria);
-
-
 
 }

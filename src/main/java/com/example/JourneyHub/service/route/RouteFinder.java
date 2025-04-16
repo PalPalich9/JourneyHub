@@ -66,7 +66,9 @@ public class RouteFinder {
 
              for (int round = 0; round < maxTransfers && (restrictPathLimit ? bestPaths.size() < MAX_TOTAL_PATHS : true); round++) {
                  Map<String, List<RouteWithMetrics>> newPathsByCity = new HashMap<>();
-                 boolean improved = false;
+                 boolean improved = true;
+                 int extraChecks = 0;
+                 int maxExtraChecks = 0;
 
                  for (String currentCity : new ArrayList<>(visitedPathsByCity.keySet())) {
                      Set<RouteWithMetrics> currentPaths = visitedPathsByCity.get(currentCity);
@@ -108,11 +110,45 @@ public class RouteFinder {
 
                                  if (nextCity.equals(arrivalCity)) {
                                      if (uniquePathSignatures.add(pathSignature)) {
-                                         bestPaths.add(newMetrics);
-                                         if (restrictPathLimit && bestPaths.size() > MAX_TOTAL_PATHS) {
-                                             ((PriorityQueue<RouteWithMetrics>) bestPaths).poll();
+                                         if (restrictPathLimit) {
+                                             PriorityQueue<RouteWithMetrics> queue = (PriorityQueue<RouteWithMetrics>) bestPaths;
+                                             if (queue.size() < MAX_TOTAL_PATHS) {
+                                                 queue.offer(newMetrics);
+                                                 improved = true;
+                                             } else if (comparator.compare(newMetrics, queue.peek()) < 0) {
+                                                 queue.poll();
+                                                 queue.offer(newMetrics);
+
+                                                 // Проверяем положение нового маршрута в PriorityQueue
+                                                 List<RouteWithMetrics> sortedResults = new ArrayList<>(queue);
+                                                 sortedResults.sort(comparator);
+                                                 int rank = sortedResults.indexOf(newMetrics);
+
+                                                 if (rank < 10) {
+                                                     maxExtraChecks = 10;
+                                                     extraChecks = Math.max(extraChecks, maxExtraChecks);
+                                                     improved = true;
+                                                 } else if (rank < 20) {
+                                                     maxExtraChecks = 5;
+                                                     extraChecks = Math.max(extraChecks, maxExtraChecks);
+                                                     improved = true;
+                                                 } else {
+                                                     maxExtraChecks = 1;
+                                                     extraChecks = Math.max(extraChecks, maxExtraChecks);
+                                                     improved = true;
+                                                 }
+                                             } else {
+                                                 if (extraChecks > 0) {
+                                                     extraChecks--;
+                                                     improved = true;
+                                                 } else {
+                                                     improved = false;
+                                                 }
+                                             }
+                                         } else {
+                                             bestPaths.add(newMetrics);
+                                             improved = true;
                                          }
-                                         improved = true;
                                      }
                                  } else {
                                      newPathsByCity.computeIfAbsent(nextCity, k -> new ArrayList<>()).add(newMetrics);
@@ -120,6 +156,14 @@ public class RouteFinder {
                                  }
                              }
                          }
+
+                         if (restrictPathLimit && bestPaths.size() >= MAX_TOTAL_PATHS && !improved && extraChecks == 0) {
+                             break;
+                         }
+                     }
+
+                     if (restrictPathLimit && bestPaths.size() >= MAX_TOTAL_PATHS && !improved && extraChecks == 0) {
+                         break;
                      }
                  }
 
@@ -129,7 +173,9 @@ public class RouteFinder {
                              .addAll(paths.stream().limit(restrictPathLimit ? MAX_TOTAL_PATHS : Integer.MAX_VALUE).collect(Collectors.toList()));
                  });
 
-                 if (!improved || (restrictPathLimit && bestPaths.size() >= MAX_TOTAL_PATHS)) break;
+                 if (!improved && (restrictPathLimit && bestPaths.size() >= MAX_TOTAL_PATHS && extraChecks == 0)) {
+                     break;
+                 }
              }
          }
 
@@ -142,7 +188,7 @@ public class RouteFinder {
              }
          } else {
              result = bestPaths.stream()
-                      .sorted(comparator)
+                     .sorted(comparator)
                      .map(RouteWithMetrics::getPath)
                      .collect(Collectors.toList());
          }
