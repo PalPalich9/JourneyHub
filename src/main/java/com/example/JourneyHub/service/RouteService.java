@@ -4,7 +4,7 @@ import com.example.JourneyHub.model.dto.RouteDto;
 import com.example.JourneyHub.model.entity.Route;
 import com.example.JourneyHub.model.enums.SortCriteria;
 import com.example.JourneyHub.model.mapper.RouteMapper;
-import com.example.JourneyHub.repository.RouteRepository;
+
 import com.example.JourneyHub.service.route.RouteFinder;
 import com.example.JourneyHub.utils.CacheUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RouteService {
 
-        private final RouteRepository routeRepository;
+
         private final RouteMapper routeMapper;
         private final ObjectMapper objectMapper;
         private final RedisTemplate<String, Object> redisTemplate;
@@ -49,28 +49,36 @@ public class RouteService {
                 return result;
         }
 
+
         @Cacheable(value = "routesDirect", key = "{#departureCity, #arrivalCity, #transportType, #sortCriteria}")
         public Map<LocalDate, List<RouteDto>> getDirectRoutesGroupedByDate(String departureCity, String arrivalCity,
                                                                            String transportType, SortCriteria sortCriteria) {
-                LocalDateTime startDate = LocalDateTime.now();
-                LocalDateTime endDate = startDate.plusDays(14);
                 String sortCriteriaStr = sortCriteria != null ? sortCriteria.name() : SortCriteria.DEFAULT.name();
                 String effectiveTransportType = (transportType == null || transportType.trim().isEmpty()) ? "mix" : transportType.toLowerCase();
 
-                List<RouteDto> routes = routeRepository.findDirectRoutesWithSort(departureCity, arrivalCity, startDate, endDate,
-                                effectiveTransportType.equals("mix") ? null : effectiveTransportType, sortCriteriaStr)
-                        .stream()
-                        .map(routeMapper::toDto)
-                        .collect(Collectors.toList());
+
+                Map<LocalDate, List<Route>> routesByDate = routeFinder.findDirectRoutesGroupedByDate(
+                        departureCity, arrivalCity, effectiveTransportType, sortCriteria);
+
+
+                Map<LocalDate, List<RouteDto>> result = routesByDate.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> entry.getValue().stream()
+                                        .map(routeMapper::toDto)
+                                        .collect(Collectors.toList()),
+                                (v1, v2) -> v1,
+                                TreeMap::new
+                        ));
+
 
                 String cacheKey = "routesDirect::" + departureCity + "," + arrivalCity + "," + transportType + "," + sortCriteriaStr;
-                CacheUtils.updateRouteIndex(Collections.singletonList(routes), redisTemplate, objectMapper, cacheKey);
+                CacheUtils.updateRouteIndex(
+                        result.values().stream().collect(Collectors.toList()),
+                        redisTemplate, objectMapper, cacheKey
+                );
 
-                return routes.stream()
-                        .collect(Collectors.groupingBy(
-                                route -> route.getDepartureTime().toLocalDate(),
-                                TreeMap::new,
-                                Collectors.toList()
-                        ));
+                return result;
         }
+
 }

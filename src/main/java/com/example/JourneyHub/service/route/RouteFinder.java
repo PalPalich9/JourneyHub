@@ -6,7 +6,10 @@ import com.example.JourneyHub.model.enums.SortCriteria;
 import com.example.JourneyHub.repository.RouteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -25,115 +28,137 @@ public class RouteFinder {
     private static final long MIN_SAME_TRANSPORT_WAITING_MINUTES = 60;
     private static final long MIN_DIFF_TRANSPORT_WAITING_MINUTES = 180;
 
+     @Transactional(readOnly = true)
+     public List<List<Route>> findRoutes(String departureCity, String arrivalCity,
+                                         LocalDateTime startTime, SortCriteria sort,
+                                         String transportType, boolean directOnly, boolean multiStop,
+                                         LocalDateTime maxDepartureTimeForStartCity, LocalDateTime maxDepartureTime,
+                                         boolean restrictPathLimit) {
+         int maxTransfers = directOnly ? 0 : (multiStop ? 3 : 1);
+
+         String resolvedTransportType = resolveTransportType(transportType);
+
+         List<Route> allRoutes;
+         try (Stream<Route> routeStream = routeRepository.streamRoutesInTimeRange(
+                 startTime, maxDepartureTime, arrivalCity, resolvedTransportType, departureCity, maxDepartureTimeForStartCity)) {
+             allRoutes = routeStream.collect(Collectors.toList());
+         }
+
+         Map<Long, List<Route>> routesByTrip = groupRoutesByTrip(allRoutes);
+
+         Comparator<RouteWithMetrics> comparator = getComparator(sort);
+
+         Collection<RouteWithMetrics> bestPaths = restrictPathLimit
+                 ? new PriorityQueue<>(MAX_TOTAL_PATHS + 1, comparator)
+                 : new ArrayList<>();
+
+         Set<String> uniquePathSignatures = new HashSet<>();
+
+         processDirectRoutes(departureCity, arrivalCity, startTime, maxDepartureTimeForStartCity, routesByTrip, bestPaths, uniquePathSignatures, directOnly);
+
+         if (!directOnly) {
+             Map<String, Set<RouteWithMetrics>> visitedPathsByCity = new HashMap<>();
+             visitedPathsByCity.put(departureCity, new HashSet<>(Collections.singletonList(new RouteWithMetrics(new ArrayList<>(), 0, 0, 0))));
+
+             processInitialTripSegments(departureCity, startTime, maxDepartureTimeForStartCity, routesByTrip, visitedPathsByCity);
+
+             Map<String, List<Route>> routesByDepartureCity = indexRoutes(allRoutes);
+
+             for (int round = 0; round < maxTransfers && (restrictPathLimit ? bestPaths.size() < MAX_TOTAL_PATHS : true); round++) {
+                 Map<String, List<RouteWithMetrics>> newPathsByCity = new HashMap<>();
+                 boolean improved = false;
+
+                 for (String currentCity : new ArrayList<>(visitedPathsByCity.keySet())) {
+                     Set<RouteWithMetrics> currentPaths = visitedPathsByCity.get(currentCity);
+                     List<Route> possibleRoutes = routesByDepartureCity.getOrDefault(currentCity, Collections.emptyList());
+
+                     for (Route route : possibleRoutes) {
+                         LocalDateTime maxTime = currentCity.equals(departureCity) ? maxDepartureTimeForStartCity : maxDepartureTime;
+                         if (route.getDepartureTime().isBefore(startTime) || route.getDepartureTime().isAfter(maxTime)) {
+                             continue;
+                         }
+
+                         for (RouteWithMetrics prevPath : currentPaths) {
+                             long waitingTime = prevPath.getPath().isEmpty()
+                                     ? 0
+                                     : ChronoUnit.MINUTES.between(prevPath.getPath().get(prevPath.getPath().size() - 1).getArrivalTime(), route.getDepartureTime());
+
+                             if (!prevPath.getPath().isEmpty() && prevPath.getPath().get(prevPath.getPath().size() - 1).getTrip().equals(route.getTrip())) {
+                                 continue;
+                             }
+
+                             if (!isValidTransfer(prevPath, route, waitingTime)) {
+                                 continue;
+                             }
+
+                             List<Route> mergedRoutes = mergeWithTrip(route, routesByTrip, maxTime, arrivalCity);
+                             for (Route mergedRoute : mergedRoutes) {
+                                 List<Route> newPath = new ArrayList<>(prevPath.getPath());
+                                 newPath.add(mergedRoute);
+
+                                 int totalPrice = calculateTotalPrice(newPath);
+                                 long totalDuration = calculateTotalDuration(newPath);
+                                 if (totalDuration > MAX_TOTAL_DURATION_MINUTES) {
+                                     continue;
+                                 }
+
+                                 RouteWithMetrics newMetrics = new RouteWithMetrics(newPath, totalPrice, totalDuration, newPath.size() - 1);
+                                 String pathSignature = generatePathSignature(newPath);
+                                 String nextCity = mergedRoute.getArrivalCity();
+
+                                 if (nextCity.equals(arrivalCity)) {
+                                     if (uniquePathSignatures.add(pathSignature)) {
+                                         bestPaths.add(newMetrics);
+                                         if (restrictPathLimit && bestPaths.size() > MAX_TOTAL_PATHS) {
+                                             ((PriorityQueue<RouteWithMetrics>) bestPaths).poll();
+                                         }
+                                         improved = true;
+                                     }
+                                 } else {
+                                     newPathsByCity.computeIfAbsent(nextCity, k -> new ArrayList<>()).add(newMetrics);
+                                     improved = true;
+                                 }
+                             }
+                         }
+                     }
+                 }
+
+                 newPathsByCity.forEach((city, paths) -> {
+                     paths.sort(comparator);
+                     visitedPathsByCity.computeIfAbsent(city, k -> new HashSet<>())
+                             .addAll(paths.stream().limit(restrictPathLimit ? MAX_TOTAL_PATHS : Integer.MAX_VALUE).collect(Collectors.toList()));
+                 });
+
+                 if (!improved || (restrictPathLimit && bestPaths.size() >= MAX_TOTAL_PATHS)) break;
+             }
+         }
+
+         List<List<Route>> result;
+         if (restrictPathLimit) {
+             result = new ArrayList<>();
+             PriorityQueue<RouteWithMetrics> queue = (PriorityQueue<RouteWithMetrics>) bestPaths;
+             while (!queue.isEmpty()) {
+                 result.add(0, queue.poll().getPath());
+             }
+         } else {
+             result = bestPaths.stream()
+                      .sorted(comparator)
+                     .map(RouteWithMetrics::getPath)
+                     .collect(Collectors.toList());
+         }
+         return result;
+     }
     public List<List<Route>> findRoutes(String departureCity, String arrivalCity,
                                         LocalDateTime startTime, SortCriteria sort,
                                         String transportType, boolean directOnly, boolean multiStop) {
         LocalDateTime maxDepartureTimeForStartCity = startTime.toLocalDate().atTime(23, 59, 59);
         LocalDateTime maxDepartureTime = startTime.toLocalDate().plusDays(2).atTime(23, 59, 59);
-        int maxTransfers = directOnly ? 0 : (multiStop ? 3 : 1);
-
-        String resolvedTransportType = resolveTransportType(transportType);
-
-        List<Route> allRoutes;
-        try (Stream<Route> routeStream = routeRepository.streamRoutesInTimeRange(
-                startTime, maxDepartureTime, arrivalCity, resolvedTransportType, departureCity, maxDepartureTimeForStartCity)) {
-            allRoutes = routeStream.collect(Collectors.toList());
-        }
-
-        Map<Long, List<Route>> routesByTrip = groupRoutesByTrip(allRoutes);
-
-        Comparator<RouteWithMetrics> comparator = getComparator(sort);
-        PriorityQueue<RouteWithMetrics> bestPaths = new PriorityQueue<>(MAX_TOTAL_PATHS + 1, comparator);
-        Set<String> uniquePathSignatures = new HashSet<>();
-
-        processDirectRoutes(departureCity, arrivalCity, startTime, maxDepartureTimeForStartCity, routesByTrip, bestPaths, uniquePathSignatures, directOnly);
-
-        if (!directOnly) {
-            Map<String, Set<RouteWithMetrics>> visitedPathsByCity = new HashMap<>();
-            visitedPathsByCity.put(departureCity, new HashSet<>(Collections.singletonList(new RouteWithMetrics(new ArrayList<>(), 0, 0, 0))));
-
-            processInitialTripSegments(departureCity, startTime, maxDepartureTimeForStartCity, routesByTrip, visitedPathsByCity);
-
-            Map<String, List<Route>> routesByDepartureCity = indexRoutes(allRoutes);
-
-            for (int round = 0; round < maxTransfers && bestPaths.size() < MAX_TOTAL_PATHS; round++) {
-                Map<String, List<RouteWithMetrics>> newPathsByCity = new HashMap<>();
-                boolean improved = false;
-
-                for (String currentCity : new ArrayList<>(visitedPathsByCity.keySet())) {
-                    Set<RouteWithMetrics> currentPaths = visitedPathsByCity.get(currentCity);
-                    List<Route> possibleRoutes = routesByDepartureCity.getOrDefault(currentCity, Collections.emptyList());
-
-                    for (Route route : possibleRoutes) {
-                        LocalDateTime maxTime = currentCity.equals(departureCity) ? maxDepartureTimeForStartCity : maxDepartureTime;
-                        if (route.getDepartureTime().isBefore(startTime) || route.getDepartureTime().isAfter(maxTime)) {
-                            continue;
-                        }
-
-                        for (RouteWithMetrics prevPath : currentPaths) {
-                            long waitingTime = prevPath.getPath().isEmpty()
-                                    ? 0
-                                    : ChronoUnit.MINUTES.between(prevPath.getPath().get(prevPath.getPath().size() - 1).getArrivalTime(), route.getDepartureTime());
-
-                            if (!prevPath.getPath().isEmpty() && prevPath.getPath().get(prevPath.getPath().size() - 1).getTrip().equals(route.getTrip())) {
-                                continue;
-                            }
-
-                            if (!isValidTransfer(prevPath, route, waitingTime)) {
-                                continue;
-                            }
-
-                            List<Route> mergedRoutes = mergeWithTrip(route, routesByTrip, maxTime, arrivalCity);
-                            for (Route mergedRoute : mergedRoutes) {
-                                List<Route> newPath = new ArrayList<>(prevPath.getPath());
-                                newPath.add(mergedRoute);
-
-                                int totalPrice = calculateTotalPrice(newPath);
-                                long totalDuration = calculateTotalDuration(newPath);
-                                if (totalDuration > MAX_TOTAL_DURATION_MINUTES) {
-                                    continue;
-                                }
-
-                                RouteWithMetrics newMetrics = new RouteWithMetrics(newPath, totalPrice, totalDuration, newPath.size() - 1);
-                                String pathSignature = generatePathSignature(newPath);
-                                String nextCity = mergedRoute.getArrivalCity();
-
-                                if (nextCity.equals(arrivalCity)) {
-                                    if (uniquePathSignatures.add(pathSignature) && (bestPaths.size() < MAX_TOTAL_PATHS || comparator.compare(newMetrics, bestPaths.peek()) < 0)) {
-                                        bestPaths.add(newMetrics);
-                                        if (bestPaths.size() > MAX_TOTAL_PATHS) bestPaths.poll();
-                                        improved = true;
-                                    }
-                                } else {
-                                    newPathsByCity.computeIfAbsent(nextCity, k -> new ArrayList<>()).add(newMetrics);
-                                    improved = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                newPathsByCity.forEach((city, paths) -> {
-                    paths.sort(comparator);
-                    visitedPathsByCity.computeIfAbsent(city, k -> new HashSet<>())
-                            .addAll(paths.stream().limit(MAX_TOTAL_PATHS).collect(Collectors.toList()));
-                });
-
-                if (!improved || bestPaths.size() >= MAX_TOTAL_PATHS) break;
-            }
-        }
-
-        List<List<Route>> result = new ArrayList<>();
-        while (!bestPaths.isEmpty()) {
-            RouteWithMetrics path = bestPaths.poll();
-            result.add(0, path.getPath());
-        }
-        return result;
+        return findRoutes(departureCity, arrivalCity, startTime, sort, transportType, directOnly, multiStop,
+                maxDepartureTimeForStartCity, maxDepartureTime, true);
     }
-
     private void processDirectRoutes(String departureCity, String arrivalCity, LocalDateTime startTime,
                                      LocalDateTime maxDepartureTime, Map<Long, List<Route>> routesByTrip,
-                                     PriorityQueue<RouteWithMetrics> bestPaths, Set<String> uniquePathSignatures, boolean directOnly) {
+                                     Collection<RouteWithMetrics> bestPaths, Set<String> uniquePathSignatures, boolean directOnly) {
         for (Long trip : routesByTrip.keySet()) {
             List<Route> tripSegments = routesByTrip.get(trip);
             tripSegments.sort(Comparator.comparing(Route::getDepartureTime));
@@ -169,7 +194,7 @@ public class RouteFinder {
                             calculateTotalDuration(path), 0);
                     if (uniquePathSignatures.add(pathSignature)) {
                         bestPaths.add(metrics);
-                        if (bestPaths.size() > MAX_TOTAL_PATHS) bestPaths.poll();
+
                     }
                 }
             }
@@ -327,5 +352,34 @@ public class RouteFinder {
                     return p2.getDepartureTime().compareTo(p1.getDepartureTime());
             }
         };
+    }
+    @Transactional(readOnly = true)
+    public Map<LocalDate, List<Route>> findDirectRoutesGroupedByDate(String departureCity, String arrivalCity,
+                                                                     String transportType, SortCriteria sortCriteria) {
+        LocalDateTime startTime = LocalDateTime.now();
+        LocalDateTime endTime = startTime.plusDays(14);
+
+        LocalDateTime maxDepartureTimeForStartCity = endTime;
+
+        List<List<Route>> routes = findRoutes(departureCity, arrivalCity, startTime, sortCriteria, transportType, true, false,
+                maxDepartureTimeForStartCity, endTime, false);
+
+        Comparator<RouteWithMetrics> comparator = getComparator(sortCriteria).reversed();
+
+        return routes.stream()
+                .filter(path -> !path.isEmpty())
+                .map(path -> new RouteWithMetrics(path, calculateTotalPrice(path), calculateTotalDuration(path), path.size() - 1))
+                .collect(Collectors.groupingBy(
+                        metrics -> metrics.getDepartureTime().toLocalDate(),
+                        TreeMap::new,
+                        Collectors.collectingAndThen(
+                                Collectors.toList(),
+                                metricsList -> metricsList.stream()
+                                        .sorted(comparator)
+                                        .map(RouteWithMetrics::getPath)
+                                        .map(this::mergeTripRoutes)
+                                        .collect(Collectors.toList())
+                        )
+                ));
     }
 }

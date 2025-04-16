@@ -95,21 +95,23 @@ public class RouteFinderTest {
     @Test
     public void testProcessDirectRoutes() throws NoSuchMethodException, IllegalAccessException, java.lang.reflect.InvocationTargetException {
         Map<Long, List<Route>> routesByTrip = sampleRoutes.stream().collect(Collectors.groupingBy(Route::getTrip));
+
         java.lang.reflect.Method getComparatorMethod = RouteFinder.class.getDeclaredMethod("getComparator", SortCriteria.class);
         getComparatorMethod.setAccessible(true);
         @SuppressWarnings("unchecked")
         Comparator<RouteWithMetrics> comparator = (Comparator<RouteWithMetrics>) getComparatorMethod.invoke(routeFinder, SortCriteria.DURATION);
-        PriorityQueue<RouteWithMetrics> bestPaths = new PriorityQueue<>(comparator);
+
+        Collection<RouteWithMetrics> bestPaths = new ArrayList<>();
         Set<String> uniquePathSignatures = new HashSet<>();
 
         java.lang.reflect.Method method = RouteFinder.class.getDeclaredMethod("processDirectRoutes",
-                String.class, String.class, LocalDateTime.class, LocalDateTime.class, Map.class, PriorityQueue.class, Set.class, boolean.class);
+                String.class, String.class, LocalDateTime.class, LocalDateTime.class, Map.class, Collection.class, Set.class, boolean.class);
         method.setAccessible(true);
         method.invoke(routeFinder, "Урал", "Братск", LocalDateTime.parse("2025-05-08T11:00:00"),
                 LocalDateTime.parse("2025-05-08T23:59:59"), routesByTrip, bestPaths, uniquePathSignatures, true);
 
         assertEquals(1, bestPaths.size());
-        RouteWithMetrics path = bestPaths.poll();
+        RouteWithMetrics path = bestPaths.iterator().next();
         assertEquals("Урал", path.getPath().get(0).getDepartureCity());
         assertEquals("Братск", path.getPath().get(0).getArrivalCity());
     }
