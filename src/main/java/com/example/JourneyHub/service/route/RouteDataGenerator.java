@@ -20,11 +20,11 @@ public class RouteDataGenerator {
 
     private static final List<String> CITIES = Arrays.asList(
             "Волгоград", "Воронеж", "Екатеринбург", "Ижевск", "Казань", "Краснодар", "Красноярск",
-            "Москва", "Нижний Новгород", "Новосибирск", "Омск", "Пермь", "Ростов-на-Дону", "Самара",
+            "Москва", "Нижний Новгород", "Новосибирск", "Омск", "Пермь", "Ростов-На-Дону", "Самара",
             "Санкт-Петербург", "Саратов", "Тольятти", "Тюмень", "Уфа", "Челябинск", "Якутск"
     );
     private static final List<String> POPULAR_CITIES = Arrays.asList(
-            "Москва", "Санкт-Петербург", "Екатеринбург", "Новосибирск", "Казань", "Ростов-на-Дону"
+            "Москва", "Санкт-Петербург", "Екатеринбург", "Новосибирск", "Казань", "Ростов-На-Дону"
     );
     private static final List<String> TRANSPORT_TYPES = Arrays.asList("air", "train", "bus");
     private static final LocalDateTime START_DATE = LocalDateTime.of(2025, 4, 10, 0, 0);

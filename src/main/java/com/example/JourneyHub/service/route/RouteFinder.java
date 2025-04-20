@@ -119,7 +119,7 @@ public class RouteFinder {
                                                  queue.poll();
                                                  queue.offer(newMetrics);
 
-                                                 // Проверяем положение нового маршрута в PriorityQueue
+
                                                  List<RouteWithMetrics> sortedResults = new ArrayList<>(queue);
                                                  sortedResults.sort(comparator);
                                                  int rank = sortedResults.indexOf(newMetrics);
